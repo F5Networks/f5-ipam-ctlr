@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/F5Networks/f5-ipam-ctlr/pkg/vlogger"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"

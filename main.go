@@ -22,7 +22,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/F5Networks/f5-ipam-ctlr/pkg/vlogger"
+	clog "github.com/F5Networks/k8s-bigip-ctlr/pkg/vlogger/console"
 	flag "github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh/terminal"
 
@@ -107,12 +108,15 @@ func init() {
 }
 
 func verifyArgs() error {
-	ll, err := log.ParseLevel(*logLevel)
-	if err != nil {
-		return fmt.Errorf(
-			"Unknown log level; valid log levels are: INFO, DEBUG, WARNING, ERROR, PANIC")
+	log.RegisterLogger(
+		log.LL_MIN_LEVEL, log.LL_MAX_LEVEL, clog.NewConsoleLogger())
+
+	if ll := log.NewLogLevel(*logLevel); nil != ll {
+		log.SetLogLevel(*ll)
+	} else {
+		return fmt.Errorf("Unknown log level requested: %s\n"+
+			"    Valid log levels are: DEBUG, INFO, WARNING, ERROR, CRITICAL", logLevel)
 	}
-	log.SetLevel(ll)
 
 	if len(*orch) == 0 {
 		return fmt.Errorf("Orchestration is required.")
@@ -179,7 +183,7 @@ func main() {
 		log.Fatalf("Unknown orchestration: %s", *orch)
 	}
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%v", err)
 	}
 	// TODO: Set up the IPAM client
 	ctlr := controller.NewController(oClient, oChan)

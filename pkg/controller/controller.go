@@ -19,9 +19,8 @@ package controller
 import (
 	"encoding/json"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/F5Networks/f5-ipam-ctlr/pkg/orchestration"
+	log "github.com/F5Networks/f5-ipam-ctlr/pkg/vlogger"
 )
 
 type Controller struct {
