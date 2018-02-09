@@ -1,0 +1,47 @@
+language: go
+sudo: required
+services:
+  - docker
+git:
+  # don't limit git clone depth
+  depth: false
+
+script:
+  - set -e
+  - if [ "$DOCKER_NAMESPACE" == "" ]; then DOCKER_NAMESPACE="local"; fi
+  - BASE_PUSH_TARGET="$DOCKER_NAMESPACE/f5-ipam-ctlr"
+  - |
+    if [ "$DOCKER_P" == "" -o "$DOCKER_U" == "" ]; then
+      echo "[INFO] Docker user or passworde vars absent from travis-ci."
+      echo "[INFO] See README.md section 'build' to configure travis with DockerHub."
+    else
+      docker login -u="$DOCKER_U" -p="$DOCKER_P"
+      DOCKER_READY="true"
+    fi
+  - export BUILD_VERSION=$(build-tools/version-tool version)
+  - export BUILD_INFO=$(build-tools/version-tool build-info)
+  - if [ "$TRAVIS_TAG" == "$TRAVIS_BRANCH" ]; then BUILD_VERSION=$TRAVIS_TAG; fi
+  - export IMG_TAG="${BASE_PUSH_TARGET}:${TRAVIS_COMMIT}"
+  - export BUILD_IMG_TAG="${BASE_PUSH_TARGET}-devel:${TRAVIS_COMMIT}"
+  - export BUILD_STAMP=devel-$TRAVIS_BRANCH-n-$TRAVIS_BUILD_NUMBER-id-$TRAVIS_BUILD_ID-$(date +%s)
+  - export CTLR_VERSION=$(echo $TRAVIS_BRANCH | sed s/-stable//g)
+  - export CLEAN_BUILD=true
+  - export BASE_OS=alpine
+  - make verify
+  - make prod
+  - docker tag "$IMG_TAG" "$BASE_PUSH_TARGET:devel-$TRAVIS_BRANCH"
+  - docker tag "$IMG_TAG" "$BASE_PUSH_TARGET:devel-$TRAVIS_BRANCH-n-$TRAVIS_BUILD_NUMBER-id-$TRAVIS_BUILD_ID"
+  - |
+    if [ "$DOCKER_READY" ]; then
+      docker tag "$IMG_TAG" "$BASE_PUSH_TARGET"
+      docker tag "$IMG_TAG" "$BASE_PUSH_TARGET:devel-$TRAVIS_BRANCH"
+      docker tag "$IMG_TAG" "$BASE_PUSH_TARGET:$BUILD_STAMP"
+      docker tag "$IMG_TAG" "$BASE_PUSH_TARGET:$BUILD_VERSION"
+      docker tag "$IMG_TAG" "$BASE_PUSH_TARGET:$BUILD_VERSION-$BUILD_INFO"
+      docker push "$IMG_TAG"
+      docker push "$BASE_PUSH_TARGET:devel-$TRAVIS_BRANCH"
+      docker push "$BASE_PUSH_TARGET:$BUILD_STAMP"
+      docker push "$BASE_PUSH_TARGET:$BUILD_VERSION"
+      docker push "$BASE_PUSH_TARGET:$BUILD_VERSION-$BUILD_INFO"
+      docker push "$BASE_PUSH_TARGET:latest"
+    fi
