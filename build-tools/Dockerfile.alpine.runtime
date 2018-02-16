@@ -1,0 +1,15 @@
+FROM alpine:3.7
+
+ENV APPPATH /app
+
+WORKDIR $APPPATH
+
+RUN mkdir -p "$APPPATH/bin" \
+  && chmod -R 755 "$APPPATH" \
+  && adduser -D ctlr
+
+COPY f5-ipam-ctlr $APPPATH/bin
+
+USER ctlr
+
+CMD [ "/app/bin/f5-ipam-ctlr" ]

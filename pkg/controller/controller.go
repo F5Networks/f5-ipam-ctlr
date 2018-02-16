@@ -40,13 +40,13 @@ func NewController(
 }
 
 func (ctlr *Controller) Run(stopCh <-chan struct{}) {
-	var ipGroup orchestration.IPGroup
 	log.Infof("Controller started: (%p)", ctlr)
 
 	ctlr.oClient.Run(stopCh)
 	go func() {
 		log.Debug("Controller waiting for updates from Orchestration client.")
 		for {
+			var ipGroup orchestration.IPGroup
 			select {
 			case data := <-ctlr.oChan:
 				if len(data) > 0 {

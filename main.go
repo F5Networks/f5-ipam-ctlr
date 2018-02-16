@@ -23,7 +23,7 @@ import (
 	"syscall"
 
 	log "github.com/F5Networks/f5-ipam-ctlr/pkg/vlogger"
-	clog "github.com/F5Networks/k8s-bigip-ctlr/pkg/vlogger/console"
+	clog "github.com/F5Networks/f5-ipam-ctlr/pkg/vlogger/console"
 	flag "github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh/terminal"
 
@@ -114,7 +114,7 @@ func verifyArgs() error {
 	if ll := log.NewLogLevel(*logLevel); nil != ll {
 		log.SetLogLevel(*ll)
 	} else {
-		return fmt.Errorf("Unknown log level requested: %s\n"+
+		return fmt.Errorf("Unknown log level requested: %v\n"+
 			"    Valid log levels are: DEBUG, INFO, WARNING, ERROR, CRITICAL", logLevel)
 	}
 

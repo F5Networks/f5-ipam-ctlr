@@ -43,7 +43,7 @@ const ipamWatchAnnotation = "ipam.f5.com/ip-allocation"
 const groupAnnotation = "ipam.f5.com/group"
 const hostnameAnnotation = "virtual-server.f5.com/hostname"
 
-// Client the the controller uses to talk to Kubernetes
+// Client that the controller uses to talk to Kubernetes
 type K8sClient struct {
 	// Kubernetes client
 	kubeClient kubernetes.Interface
