@@ -14,62 +14,71 @@
  * limitations under the License.
  */
 
-package controller
+package store
 
 import "sort"
 
-// Map of all IP addresses and their corresponding hostnames
+// Map of all IP addresses and their corresponding hostnames, netviews, and CIDRs
 type Store struct {
-	Records map[string]hostSet
+	Records  map[string]hostSet
+	Netviews map[string]string
+	Cidrs    map[string]string
 }
 
-// Map of hosts (bool unused)
-type hostSet map[string]bool
+// Map of hosts (value is record type)
+type hostSet map[string]string
 
 func NewStore() *Store {
 	var st Store
 	st.Records = make(map[string]hostSet)
+	st.Netviews = make(map[string]string)
+	st.Cidrs = make(map[string]string)
 	return &st
 }
 
 // Adds/Updates a record for an IP and hosts
-func (st *Store) addRecord(ip string, hosts []string) {
+func (st *Store) AddRecord(ip, host, recordType, netview, cidr string) {
 	if _, found := st.Records[ip]; found {
-		for _, host := range hosts {
-			if _, ok := st.Records[ip][host]; !ok {
-				st.Records[ip][host] = true
-			}
+		if _, ok := st.Records[ip][host]; !ok {
+			st.Records[ip][host] = recordType
+			st.Netviews[ip] = netview
+			st.Cidrs[ip] = cidr
 		}
 	} else {
-		st.overwriteRecord(ip, hosts)
+		st.overwriteRecord(ip, host, recordType, netview, cidr)
 	}
 }
 
 // Overwrites the contents of a record
-func (st *Store) overwriteRecord(ip string, hosts []string) {
+func (st *Store) overwriteRecord(ip, host, recordType, netview, cidr string) {
 	st.Records[ip] = make(hostSet)
-	for _, host := range hosts {
-		st.Records[ip][host] = true
-	}
+	st.Records[ip][host] = recordType
+	st.Netviews[ip] = netview
+	st.Cidrs[ip] = cidr
 }
 
 // Deletes a record for an IP address
 func (st *Store) deleteRecord(ip string) {
 	delete(st.Records, ip)
+	delete(st.Netviews, ip)
+	delete(st.Cidrs, ip)
 }
 
 // Deletes a host from a record
 func (st *Store) deleteHost(delHost string) {
-	for _, hosts := range st.Records {
+	for ip, hosts := range st.Records {
 		if _, ok := hosts[delHost]; ok {
 			delete(hosts, delHost)
+			if len(hosts) == 0 {
+				st.deleteRecord(ip)
+			}
 			return
 		}
 	}
 }
 
 // Deletes hosts from records
-func (st *Store) deleteHosts(delHosts []string) {
+func (st *Store) DeleteHosts(delHosts []string) {
 	for _, delHost := range delHosts {
 		st.deleteHost(delHost)
 	}
@@ -90,7 +99,7 @@ func (st *Store) getHosts(ip string) []string {
 }
 
 // Returns the IP address for a given host
-func (st *Store) getIP(host string) string {
+func (st *Store) GetIP(host string) string {
 	for ip, hosts := range st.Records {
 		if _, ok := hosts[host]; ok {
 			return ip

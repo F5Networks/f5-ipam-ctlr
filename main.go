@@ -18,8 +18,10 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	log "github.com/F5Networks/f5-ipam-ctlr/pkg/vlogger"
@@ -28,6 +30,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/F5Networks/f5-ipam-ctlr/pkg/controller"
+	"github.com/F5Networks/f5-ipam-ctlr/pkg/manager"
 	"github.com/F5Networks/f5-ipam-ctlr/pkg/orchestration"
 
 	"k8s.io/client-go/kubernetes"
@@ -42,12 +45,14 @@ var (
 
 	// Flag sets and supported flags
 	flags       *flag.FlagSet
-	kubeFlags   *flag.FlagSet
 	globalFlags *flag.FlagSet
+	kubeFlags   *flag.FlagSet
+	ibFlags     *flag.FlagSet
 
 	// Global
 	logLevel     *string
 	orch         *string
+	mgr          *string
 	printVersion *bool
 
 	// Kubernetes
@@ -55,12 +60,23 @@ var (
 	kubeConfig     *string
 	namespaces     *[]string
 	namespaceLabel *string
+
+	// Infoblox
+	ibHost     *string
+	ibVersion  *string
+	ibPort     *int
+	ibUsername *string
+	ibPassword *string
+	credsDir   *string
 )
+
+const INFOBLOX = "infoblox"
 
 func init() {
 	flags = flag.NewFlagSet("main", flag.ContinueOnError)
 	globalFlags = flag.NewFlagSet("Global", flag.ContinueOnError)
 	kubeFlags = flag.NewFlagSet("Kubernetes", flag.ContinueOnError)
+	ibFlags = flag.NewFlagSet("Infoblox", flag.ContinueOnError)
 
 	// Flag terminal wrapping
 	var err error
@@ -77,6 +93,8 @@ func init() {
 	logLevel = globalFlags.String("log-level", "INFO", "Optional, logging level.")
 	orch = globalFlags.String("orchestration", "",
 		"Required, orchestration that the controller is running in.")
+	mgr = globalFlags.String("ip-manager", "",
+		"Required, the IPAM system that the controller will interface with.")
 	printVersion = globalFlags.Bool("version", false, "Optional, print version and exit.")
 
 	// Kubernetes flags
@@ -91,19 +109,39 @@ func init() {
 	namespaceLabel = kubeFlags.String("namespace-label", "",
 		"Optional, used to watch for namespaces with this label.")
 
+	// Infoblox flags
+	ibHost = ibFlags.String("infoblox-grid-host", "",
+		"Required for infoblox, the grid manager host IP.")
+	ibVersion = ibFlags.String("infoblox-wapi-version", "",
+		"Required for infoblox, the Web API version.")
+	ibPort = ibFlags.Int("infoblox-wapi-port", 443,
+		"Optional for infoblox, the Web API port.")
+	ibUsername = ibFlags.String("infoblox-username", "",
+		"Required for infoblox, the login username.")
+	ibPassword = ibFlags.String("infoblox-password", "",
+		"Required for infoblox, the login password.")
+	credsDir = ibFlags.String("credentials-directory", "",
+		"Optional for infoblox, directory that contains the infoblox username and "+
+			"password files. To be used instead of username and password arguments.")
+
 	globalFlags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "  Global:\n%s\n", globalFlags.FlagUsagesWrapped(width))
 	}
 	kubeFlags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "  Kubernetes:\n%s\n", kubeFlags.FlagUsagesWrapped(width))
 	}
+	ibFlags.Usage = func() {
+		fmt.Fprintf(os.Stderr, "  Infoblox:\n%s\n", ibFlags.FlagUsagesWrapped(width))
+	}
 	flags.AddFlagSet(globalFlags)
 	flags.AddFlagSet(kubeFlags)
+	flags.AddFlagSet(ibFlags)
 
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s\n", os.Args[0])
 		globalFlags.Usage()
 		kubeFlags.Usage()
+		ibFlags.Usage()
 	}
 }
 
@@ -122,11 +160,56 @@ func verifyArgs() error {
 		return fmt.Errorf("Orchestration is required.")
 	}
 
+	if len(*mgr) == 0 {
+		return fmt.Errorf("IP-Manager is required.")
+	}
+
+	*orch = strings.ToLower(*orch)
+	*mgr = strings.ToLower(*mgr)
+
 	if len(*namespaces) != 0 && len(*namespaceLabel) != 0 {
 		return fmt.Errorf("Cannot specify both namespace and namespace-label.")
 	}
 
+	if *mgr == INFOBLOX {
+		if len(*ibHost) == 0 || len(*ibVersion) == 0 {
+			return fmt.Errorf("Missing required Infoblox parameter.")
+		} else if (len(*ibUsername) == 0 || len(*ibPassword) == 0) && len(*credsDir) == 0 {
+			return fmt.Errorf("Missing Infoblox credentials.")
+		} else if len(*ibUsername) > 0 && len(*ibPassword) > 0 && len(*credsDir) > 0 {
+			return fmt.Errorf(
+				"Please specify either credentials directory OR username/password, not both.")
+		}
+	}
+
 	return nil
+}
+
+func getCredentials() {
+	if *mgr == INFOBLOX && len(*credsDir) > 0 {
+		var usr, pass string
+		var usrBytes, passBytes []byte
+		var err error
+		if strings.HasSuffix(*credsDir, "/") {
+			usr = *credsDir + "infoblox-username"
+			pass = *credsDir + "infoblox-password"
+		} else {
+			usr = *credsDir + "/infoblox-username"
+			pass = *credsDir + "/infoblox-password"
+		}
+
+		usrBytes, err = ioutil.ReadFile(usr)
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		*ibUsername = string(usrBytes)
+
+		passBytes, err = ioutil.ReadFile(pass)
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		*ibPassword = string(passBytes)
+	}
 }
 
 func main() {
@@ -146,13 +229,16 @@ func main() {
 		flags.Usage()
 		os.Exit(1)
 	}
+	getCredentials()
 
 	log.Infof("Starting: Version: %s, BuildInfo: %s", version, buildInfo)
 
 	stopCh := make(chan struct{})
 
 	// Create a channel for the orchestration client to send data to the controller
-	oChan := make(chan []byte)
+	oChan := make(chan *orchestration.IPGroup)
+
+	orchestration.IPAM = *mgr
 
 	// Create the orchestration-based client
 	var oClient orchestration.Client
@@ -185,8 +271,27 @@ func main() {
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
-	// TODO: Set up the IPAM client
-	ctlr := controller.NewController(oClient, oChan)
+
+	// Create the IPAM system client
+	var iClient manager.Client
+	switch *mgr {
+	case INFOBLOX:
+		params := manager.InfobloxParams{
+			Host:     *ibHost,
+			Version:  *ibVersion,
+			Port:     *ibPort,
+			Username: *ibUsername,
+			Password: *ibPassword,
+		}
+		iClient, err = manager.NewInfobloxClient(&params, *orch)
+	default:
+		log.Fatalf("Unknown IP manager: %s", *mgr)
+	}
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	ctlr := controller.NewController(oClient, iClient, oChan)
 	ctlr.Run(stopCh)
 
 	signals := make(chan os.Signal, 1)

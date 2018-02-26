@@ -17,7 +17,6 @@
 package orchestration
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -41,7 +40,12 @@ import (
 
 const ipamWatchAnnotation = "ipam.f5.com/ip-allocation"
 const groupAnnotation = "ipam.f5.com/group"
+const netviewAnnotation = "ipam.f5.com/infoblox-netview"
+const cidrAnnotation = "ipam.f5.com/network-cidr"
 const hostnameAnnotation = "virtual-server.f5.com/hostname"
+
+// The IPAM system being used
+var IPAM string
 
 // Client that the controller uses to talk to Kubernetes
 type K8sClient struct {
@@ -67,7 +71,7 @@ type K8sClient struct {
 	ipGroup IPGroup
 
 	// Channel for sending data to controller
-	channel chan<- []byte
+	channel chan<- *IPGroup
 }
 
 // Struct to allow NewKubernetesClient to receive all or some parameters
@@ -76,7 +80,7 @@ type KubeParams struct {
 	restClient     rest.Interface
 	Namespaces     []string
 	NamespaceLabel string
-	Channel        chan<- []byte
+	Channel        chan<- *IPGroup
 }
 
 // Sets up an interface with Kubernetes
@@ -568,6 +572,20 @@ func (client *K8sClient) resourceWorker() {
 }
 
 func (client *K8sClient) processNextResource() bool {
+	// Startup case: If there are no items in k8s when we start up (queues are empty and
+	// initialState is false), we still need to send the empty groups to the Controller
+	// so that it knows to clear the IPAM system of any existing records.
+	if !client.initialState {
+		go func() {
+			// We sleep to give k8s a chance to add items to the queue (if there are any).
+			// We don't want to enter this block too fast before the queue has been populated.
+			time.Sleep(2 * time.Second)
+			if client.rsQueue.Len() == 0 && client.nsQueue.Len() == 0 {
+				client.writeIPGroups()
+			}
+		}()
+	}
+
 	key, quit := client.rsQueue.Get()
 	if quit {
 		return false
@@ -602,20 +620,39 @@ func (client *K8sClient) syncResource(rKey resourceKey) error {
 			if cm.ObjectMeta.Namespace != rKey.Namespace || cm.ObjectMeta.Name != rKey.Name {
 				continue
 			}
-			// Get the hostname from the annotation
-			if host, ok := cm.ObjectMeta.Annotations[hostnameAnnotation]; ok {
-				log.Debugf("Found host '%v' for ConfigMap '%s'", host, rKey.Name)
-				ret = client.ipGroup.addToIPGroup(
-					"",
-					"ConfigMap",
-					rKey.Name,
-					rKey.Namespace,
-					[]string{host},
-				)
-				updated = updated || ret
-			} else {
-				log.Warningf("No hostname annotation provided for ConfigMap '%v'", rKey.Name)
+
+			var host, netview, cidr string
+			var ok bool
+			if cidr, ok = cm.ObjectMeta.Annotations[cidrAnnotation]; !ok {
+				log.Errorf(
+					"No network cidr annotation provided for ConfigMap '%v'.", rKey.Name)
+				return nil
 			}
+			if netview, ok = cm.ObjectMeta.Annotations[netviewAnnotation]; !ok && IPAM == "infoblox" {
+				log.Errorf(
+					"ConfigMap '%v' does not have required Infoblox netview annotation.", rKey.Name)
+				return nil
+			}
+			if host, ok = cm.ObjectMeta.Annotations[hostnameAnnotation]; !ok {
+				log.Errorf("No hostname annotation provided for ConfigMap '%v'.", rKey.Name)
+				return nil
+			}
+
+			// Get the hostname from the annotation
+			log.Debugf("Found host '%v' for ConfigMap '%s'", host, rKey.Name)
+
+			ret = client.ipGroup.addToIPGroup(
+				groupKey{
+					Name:    "",
+					Netview: netview,
+					Cidr:    cidr,
+				},
+				"ConfigMap",
+				rKey.Name,
+				rKey.Namespace,
+				[]string{host},
+			)
+			updated = updated || ret
 		}
 	} else if rKey.Kind == "Ingress" {
 		ingresses, err := rsInf.ingInformer.GetIndexer().ByIndex("name", rKey.Name)
@@ -630,9 +667,21 @@ func (client *K8sClient) syncResource(rKey resourceKey) error {
 			if ing.ObjectMeta.Namespace != rKey.Namespace || ing.ObjectMeta.Name != rKey.Name {
 				continue
 			}
-			var groupName string
-			if grp, ok := ing.ObjectMeta.Annotations[groupAnnotation]; ok {
-				groupName = grp
+			var val, groupName, netview, cidr string
+			var ok bool
+			if val, ok = ing.ObjectMeta.Annotations[groupAnnotation]; ok {
+				groupName = val
+			}
+
+			if cidr, ok = ing.ObjectMeta.Annotations[cidrAnnotation]; !ok {
+				log.Errorf(
+					"No network cidr annotation provided for Ingress '%v'.", rKey.Name)
+				return nil
+			}
+			if netview, ok = ing.ObjectMeta.Annotations[netviewAnnotation]; !ok && IPAM == "infoblox" {
+				log.Errorf(
+					"Ingress '%v' does not have required Infoblox netview annotation.", rKey.Name)
+				return nil
 			}
 
 			if ing.Spec.Rules == nil { // single-service
@@ -640,7 +689,11 @@ func (client *K8sClient) syncResource(rKey resourceKey) error {
 				if host, ok := ing.ObjectMeta.Annotations[hostnameAnnotation]; ok {
 					log.Debugf("Found host '%v' for Ingress '%s'", host, rKey.Name)
 					ret = client.ipGroup.addToIPGroup(
-						groupName,
+						groupKey{
+							Name:    groupName,
+							Netview: netview,
+							Cidr:    cidr,
+						},
 						"Ingress",
 						rKey.Name,
 						rKey.Namespace,
@@ -648,7 +701,7 @@ func (client *K8sClient) syncResource(rKey resourceKey) error {
 					)
 					updated = updated || ret
 				} else {
-					log.Warningf("No hostname annotation provided for Ingress '%v'", rKey.Name)
+					log.Warningf("No hostname annotation provided for Ingress '%v'.", rKey.Name)
 				}
 			} else { // multi-service
 				var hosts []string
@@ -657,7 +710,11 @@ func (client *K8sClient) syncResource(rKey resourceKey) error {
 				}
 				log.Debugf("Found hosts '%v' for Ingress '%s'", hosts, rKey.Name)
 				ret = client.ipGroup.addToIPGroup(
-					groupName,
+					groupKey{
+						Name:    groupName,
+						Netview: netview,
+						Cidr:    cidr,
+					},
 					"Ingress",
 					rKey.Name,
 					rKey.Namespace,
@@ -681,15 +738,10 @@ func (client *K8sClient) writeIPGroups() {
 
 	if client.rsQueue.Len() == 0 && client.nsQueue.Len() == 0 || client.initialState {
 		if client.channel != nil {
-			data, err := json.Marshal(client.ipGroup)
-			if err != nil {
-				log.Warningf("Unable to properly encode ipGroup data: %v", err)
-				return
-			}
 			log.Infof("Kubernetes client wrote %v hosts to Controller.",
 				client.ipGroup.NumHosts())
 			select {
-			case client.channel <- data:
+			case client.channel <- &client.ipGroup:
 				log.Debug("Kubernetes client received ACK from Controller.")
 			case <-time.After(3 * time.Second):
 			}
