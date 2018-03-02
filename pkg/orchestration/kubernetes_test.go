@@ -285,17 +285,17 @@ var _ = Describe("Kubernetes Client tests", func() {
 			ns2 := "ns2"
 			netview := "default"
 			cidr := "1.2.3.0/24"
-			emptyGrp := groupKey{
+			emptyGrp := GroupKey{
 				Name:    "",
 				Netview: netview,
 				Cidr:    cidr,
 			}
-			aGrp := groupKey{
+			aGrp := GroupKey{
 				Name:    "A",
 				Netview: netview,
 				Cidr:    cidr,
 			}
-			bGrp := groupKey{
+			bGrp := GroupKey{
 				Name:    "B",
 				Netview: netview,
 				Cidr:    cidr,
