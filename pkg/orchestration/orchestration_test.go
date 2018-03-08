@@ -100,6 +100,8 @@ var _ = Describe("Orchestration tests", func() {
 		Expect(ipGroup.NumHosts()).To(Equal(5))
 		Expect(ipGroup.GetAllHosts()).To(Equal(
 			[]string{"bar.com", "baz.com", "foo.com", "foobar.com", "qux.com"}))
+		Expect(ipGroup.getSpecsWithHosts([]string{"foo.com", "bar.com", "baz.com"})).
+			To(Equal([]Spec{spec1, spec2}))
 
 		// Remove host
 		ipGroup.removeHost("qux.com", resourceKey{

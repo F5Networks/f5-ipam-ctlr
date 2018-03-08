@@ -26,6 +26,7 @@ import (
 
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
@@ -72,6 +73,7 @@ func (c *mockK8sClient) addNamespace(ns *v1.Namespace, label string) bool {
 }
 
 func (c *mockK8sClient) addConfigMap(cm *v1.ConfigMap) bool {
+	c.client.kubeClient.Core().ConfigMaps(cm.ObjectMeta.Namespace).Create(cm)
 	ok, rKey := c.client.checkValidConfigMap(cm)
 	if ok {
 		rsInf, _ := c.client.getResourceInformer(cm.ObjectMeta.Namespace)
@@ -107,6 +109,7 @@ func (c *mockK8sClient) deleteConfigMap(cm *v1.ConfigMap) bool {
 }
 
 func (c *mockK8sClient) addIngress(ing *v1beta1.Ingress) bool {
+	c.client.kubeClient.Extensions().Ingresses(ing.ObjectMeta.Namespace).Create(ing)
 	ok, rKey := c.client.checkValidIngress(ing)
 	if ok {
 		rsInf, _ := c.client.getResourceInformer(ing.ObjectMeta.Namespace)
@@ -475,6 +478,60 @@ var _ = Describe("Kubernetes Client tests", func() {
 				Expect(len(mockClient.client.ipGroup.Groups)).To(Equal(0))
 				groupA = mockClient.client.ipGroup.Groups[aGrp]
 				Expect(groupA).To(BeNil())
+			})
+
+			It("writes annotations to resources", func() {
+				ip1 := "1.2.3.4"
+				ip2 := "5.6.7.8"
+				data := map[string]string{"data": "testData"}
+				spec1 := v1beta1.IngressSpec{
+					Backend: &v1beta1.IngressBackend{
+						ServiceName: "foo",
+						ServicePort: intstr.IntOrString{IntVal: 80},
+					},
+				}
+				// ConfigMap
+				cfg1 := test.NewConfigMap("cfg1", ns1,
+					map[string]string{
+						ipamWatchAnnotation: "dynamic",
+						hostnameAnnotation:  "foo.com",
+						netviewAnnotation:   netview,
+						cidrAnnotation:      cidr,
+					}, data)
+				r := mockClient.addConfigMap(cfg1)
+				Expect(r).To(BeTrue())
+
+				// Single-service Ingress
+				ing1 := test.NewIngress("ing1", ns2,
+					map[string]string{
+						ipamWatchAnnotation: "dynamic",
+						hostnameAnnotation:  "bar.com",
+						groupAnnotation:     "A",
+						netviewAnnotation:   netview,
+						cidrAnnotation:      cidr,
+					}, spec1)
+				r = mockClient.addIngress(ing1)
+				Expect(r).To(BeTrue())
+
+				Expect(len(mockClient.client.ipGroup.Groups)).To(Equal(2))
+
+				// Annotate ConfigMap
+				mockClient.client.AnnotateResources(ip1, []string{"foo.com"})
+				cm, err := mockClient.client.kubeClient.Core().ConfigMaps(ns1).
+					Get("cfg1", metav1.GetOptions{})
+				Expect(err).To(BeNil())
+				val, ok := cm.ObjectMeta.Annotations[ipAnnotation]
+				Expect(ok).To(BeTrue())
+				Expect(val).To(Equal(ip1))
+
+				// Annotate Ingress
+				mockClient.client.AnnotateResources(ip2, []string{"bar.com"})
+				ing, err := mockClient.client.kubeClient.Extensions().Ingresses(ns2).
+					Get("ing1", metav1.GetOptions{})
+				Expect(err).To(BeNil())
+				val, ok = ing.ObjectMeta.Annotations[ipAnnotation]
+				Expect(ok).To(BeTrue())
+				Expect(val).To(Equal(ip2))
 			})
 		})
 	})

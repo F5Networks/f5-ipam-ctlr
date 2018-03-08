@@ -43,6 +43,7 @@ const groupAnnotation = "ipam.f5.com/group"
 const netviewAnnotation = "ipam.f5.com/infoblox-netview"
 const cidrAnnotation = "ipam.f5.com/network-cidr"
 const hostnameAnnotation = "virtual-server.f5.com/hostname"
+const ipAnnotation = "virtual-server.f5.com/ip"
 
 // The IPAM system being used
 var IPAM string
@@ -747,6 +748,54 @@ func (client *K8sClient) writeIPGroups() {
 			}
 		}
 		client.initialState = true
+	}
+}
+
+// Annotates resources that contain given hosts with the given IP address
+func (client *K8sClient) AnnotateResources(ip string, hosts []string) {
+	var name, namespace string
+	specsForIP := client.ipGroup.getSpecsWithHosts(hosts)
+
+	for _, spec := range specsForIP {
+		name = spec.Name
+		namespace = spec.Namespace
+
+		if spec.Kind == "ConfigMap" {
+			cm, err := client.kubeClient.Core().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
+			if err != nil {
+				log.Errorf(
+					"Could not retrieve ConfigMap '%s' to annotate with IP address: %v",
+					name, err)
+				continue
+			}
+			if cm.ObjectMeta.Annotations[ipAnnotation] != ip {
+				cm.ObjectMeta.Annotations[ipAnnotation] = ip
+				_, err := client.kubeClient.CoreV1().ConfigMaps(namespace).Update(cm)
+				if nil != err {
+					log.Errorf("Error when updating IP annotation: %v", err)
+				} else {
+					log.Debugf("Annotating ConfigMap '%s' with IP address '%s'.", name, ip)
+				}
+			}
+		} else if spec.Kind == "Ingress" {
+			ing, err := client.kubeClient.Extensions().Ingresses(namespace).
+				Get(name, metav1.GetOptions{})
+			if err != nil {
+				log.Errorf(
+					"Could not retrieve Ingress '%s' to annotate with IP address: %v",
+					name, err)
+				continue
+			}
+			if ing.ObjectMeta.Annotations[ipAnnotation] != ip {
+				ing.ObjectMeta.Annotations[ipAnnotation] = ip
+				_, err := client.kubeClient.Extensions().Ingresses(namespace).Update(ing)
+				if nil != err {
+					log.Errorf("Error when updating IP annotation: %v", err)
+				} else {
+					log.Debugf("Annotating Ingress '%s' with IP address '%s'.", name, ip)
+				}
+			}
+		}
 	}
 }
 

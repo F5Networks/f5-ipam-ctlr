@@ -27,6 +27,8 @@ type Client interface {
 	Run(stopCh <-chan struct{})
 	// Writes the IPGroups to the Controller
 	writeIPGroups()
+	// Annotates resources that contain given hosts with the given IP address
+	AnnotateResources(ip string, hosts []string)
 }
 
 // Adds or updates a list of hosts that share an IP address (same groupName)
@@ -103,6 +105,9 @@ func (ipGrp *IPGroup) removeFromIPGroup(rmSpec Spec) {
 
 // Removes a host from its Spec
 func (ipGrp *IPGroup) removeHost(rmHost string, key resourceKey) {
+	ipGrp.GroupMutex.Lock()
+	defer ipGrp.GroupMutex.Unlock()
+
 	var deleted bool
 	for gKey, grp := range ipGrp.Groups {
 		for i, spec := range grp {
@@ -121,6 +126,24 @@ func (ipGrp *IPGroup) removeHost(rmHost string, key resourceKey) {
 			}
 		}
 	}
+}
+
+// Returns all of the Specs that contain hosts matching those passed in
+func (ipGrp *IPGroup) getSpecsWithHosts(hosts []string) []Spec {
+	ipGrp.GroupMutex.Lock()
+	defer ipGrp.GroupMutex.Unlock()
+
+	var specs []Spec
+	for _, grp := range ipGrp.Groups {
+		for _, spec := range grp {
+			// If the first host in the spec is in hosts, then
+			// we can be certain that all spec.Hosts are in hosts
+			if contains(hosts, spec.Hosts[0]) {
+				specs = append(specs, spec)
+			}
+		}
+	}
+	return specs
 }
 
 // Returns all hosts across IPGroups

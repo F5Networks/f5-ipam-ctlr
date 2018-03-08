@@ -63,6 +63,7 @@ func (ctlr *Controller) Run(stopCh <-chan struct{}) {
 					log.Debugf("Controller received %v hosts from Orchestration client.",
 						ipGroup.NumHosts())
 					ctlr.processIPGroups(ipGroup)
+					ctlr.writeIPHosts()
 				} else {
 					log.Error("Controller could not get data from Orchestration client.")
 				}
@@ -174,6 +175,14 @@ func (ctlr *Controller) processIPGroups(ipGroup *orchestration.IPGroup) {
 		}
 	}
 	ctlr.store.DeleteHosts(toRemove)
+}
+
+// Writes the IP addresses and their hosts back to the orchestration
+func (ctlr *Controller) writeIPHosts() {
+	for ip, rec := range ctlr.store.Records {
+		hosts := mapKeys(rec)
+		ctlr.oClient.AnnotateResources(ip, hosts)
+	}
 }
 
 // On startup, refreshes the internal store to match the IPAM system's records
