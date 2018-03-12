@@ -283,6 +283,23 @@ var _ = Describe("Kubernetes Client tests", func() {
 		Context("without namespace label", func() {
 			ns1 := "ns1"
 			ns2 := "ns2"
+			netview := "default"
+			cidr := "1.2.3.0/24"
+			emptyGrp := groupKey{
+				Name:    "",
+				Netview: netview,
+				Cidr:    cidr,
+			}
+			aGrp := groupKey{
+				Name:    "A",
+				Netview: netview,
+				Cidr:    cidr,
+			}
+			bGrp := groupKey{
+				Name:    "B",
+				Netview: netview,
+				Cidr:    cidr,
+			}
 			BeforeEach(func() {
 				mockClient = newMockK8sClient(&KubeParams{
 					KubeClient: fakeClient,
@@ -345,6 +362,8 @@ var _ = Describe("Kubernetes Client tests", func() {
 						ipamWatchAnnotation: "dynamic",
 						groupAnnotation:     "A",
 						hostnameAnnotation:  "foo.com",
+						netviewAnnotation:   netview,
+						cidrAnnotation:      cidr,
 					}, spec1)
 				r = mockClient.addIngress(ing1)
 				Expect(r).To(BeTrue())
@@ -353,19 +372,23 @@ var _ = Describe("Kubernetes Client tests", func() {
 					Name:      "ing1",
 					Namespace: ns2,
 					Hosts:     []string{"foo.com"},
+					Netview:   netview,
+					Cidr:      cidr,
 				}
 
 				Expect(len(mockClient.client.ipGroup.Groups)).To(Equal(1))
-				groupA := mockClient.client.ipGroup.Groups["A"]
+				groupA := mockClient.client.ipGroup.Groups[aGrp]
 				Expect(groupA).ToNot(BeNil())
 				Expect(groupA).To(Equal([]Spec{ing1Spec}))
-				Expect(mockClient.client.ipGroup.Groups[""]).To(BeNil())
+				Expect(mockClient.client.ipGroup.Groups[emptyGrp]).To(BeNil())
 
 				// Multi-service Ingress
 				ing2 := test.NewIngress("ing2", ns1,
 					map[string]string{
 						ipamWatchAnnotation: "dynamic",
 						groupAnnotation:     "A",
+						netviewAnnotation:   netview,
+						cidrAnnotation:      cidr,
 					}, spec2)
 				r = mockClient.addIngress(ing2)
 				Expect(r).To(BeTrue())
@@ -374,10 +397,12 @@ var _ = Describe("Kubernetes Client tests", func() {
 					Name:      "ing2",
 					Namespace: ns1,
 					Hosts:     []string{"bar.com", "baz.com"},
+					Netview:   netview,
+					Cidr:      cidr,
 				}
 
 				Expect(len(mockClient.client.ipGroup.Groups)).To(Equal(1))
-				groupA = mockClient.client.ipGroup.Groups["A"]
+				groupA = mockClient.client.ipGroup.Groups[aGrp]
 				Expect(groupA).ToNot(BeNil())
 				Expect(groupA).To(Equal([]Spec{ing1Spec, ing2Spec}))
 
@@ -385,6 +410,8 @@ var _ = Describe("Kubernetes Client tests", func() {
 				cfg1.ObjectMeta.Annotations = map[string]string{
 					ipamWatchAnnotation: "dynamic",
 					hostnameAnnotation:  "qux.com",
+					netviewAnnotation:   netview,
+					cidrAnnotation:      cidr,
 				}
 				oldCfg := test.CopyConfigMap(*cfg1)
 				mockClient.updateConfigMap(oldCfg, cfg1)
@@ -393,10 +420,12 @@ var _ = Describe("Kubernetes Client tests", func() {
 					Name:      "cfg1",
 					Namespace: ns1,
 					Hosts:     []string{"qux.com"},
+					Netview:   netview,
+					Cidr:      cidr,
 				}
 
 				Expect(len(mockClient.client.ipGroup.Groups)).To(Equal(2))
-				groupAll := mockClient.client.ipGroup.Groups[""]
+				groupAll := mockClient.client.ipGroup.Groups[emptyGrp]
 				Expect(groupAll).ToNot(BeNil())
 				Expect(groupAll).To(Equal([]Spec{cfg1Spec}))
 
@@ -412,14 +441,14 @@ var _ = Describe("Kubernetes Client tests", func() {
 				// Delete ConfigMap; IPGroup should be removed
 				mockClient.deleteConfigMap(cfg1)
 				Expect(len(mockClient.client.ipGroup.Groups)).To(Equal(1))
-				groupAll = mockClient.client.ipGroup.Groups[""]
+				groupAll = mockClient.client.ipGroup.Groups[emptyGrp]
 				Expect(groupAll).To(BeNil())
 
 				// Remove IPAM annotation; IPGroup should be removed
 				oldIng := test.CopyIngress(*ing1)
 				delete(ing1.ObjectMeta.Annotations, ipamWatchAnnotation)
 				mockClient.updateIngress(oldIng, ing1)
-				groupA = mockClient.client.ipGroup.Groups["A"]
+				groupA = mockClient.client.ipGroup.Groups[aGrp]
 				Expect(groupA).ToNot(BeNil())
 				Expect(groupA).To(Equal([]Spec{ing2Spec}))
 
@@ -427,9 +456,9 @@ var _ = Describe("Kubernetes Client tests", func() {
 				oldIng = test.CopyIngress(*ing2)
 				ing2.ObjectMeta.Annotations[groupAnnotation] = "B"
 				mockClient.updateIngress(oldIng, ing2)
-				groupA = mockClient.client.ipGroup.Groups["A"]
+				groupA = mockClient.client.ipGroup.Groups[aGrp]
 				Expect(groupA).To(BeNil())
-				groupB := mockClient.client.ipGroup.Groups["B"]
+				groupB := mockClient.client.ipGroup.Groups[bGrp]
 				Expect(groupB).ToNot(BeNil())
 				Expect(groupB).To(Equal([]Spec{ing2Spec}))
 
@@ -437,14 +466,14 @@ var _ = Describe("Kubernetes Client tests", func() {
 				oldIng = test.CopyIngress(*ing2)
 				ing2.Spec.Rules[0].Host = "newhost.com"
 				mockClient.updateIngress(oldIng, ing2)
-				groupB = mockClient.client.ipGroup.Groups["B"]
+				groupB = mockClient.client.ipGroup.Groups[bGrp]
 				ing2Spec.Hosts = []string{"baz.com", "newhost.com"}
 				Expect(groupB).To(Equal([]Spec{ing2Spec}))
 
 				// Remove last Ingress
 				mockClient.deleteIngress(ing2)
 				Expect(len(mockClient.client.ipGroup.Groups)).To(Equal(0))
-				groupA = mockClient.client.ipGroup.Groups["A"]
+				groupA = mockClient.client.ipGroup.Groups[aGrp]
 				Expect(groupA).To(BeNil())
 			})
 		})

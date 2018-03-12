@@ -27,8 +27,18 @@ var _ = Describe("Orchestration tests", func() {
 	It("correctly configures IPGroups", func() {
 		ipGroup := IPGroup{Groups: make(IPGroups), GroupMutex: new(sync.Mutex)}
 		ns := "default"
-		groupA := "A"
-		groupB := "B"
+		netview := "default"
+		cidr := "1.2.3.0/24"
+		groupA := groupKey{
+			Name:    "A",
+			Netview: netview,
+			Cidr:    cidr,
+		}
+		groupB := groupKey{
+			Name:    "B",
+			Netview: netview,
+			Cidr:    cidr,
+		}
 		// Add an entry to group A
 		ipGroup.addToIPGroup(groupA, "Ingress", "ing1", ns, []string{"foo.com", "bar.com"})
 		spec1 := Spec{
@@ -36,6 +46,8 @@ var _ = Describe("Orchestration tests", func() {
 			Name:      "ing1",
 			Namespace: ns,
 			Hosts:     []string{"foo.com", "bar.com"},
+			Netview:   netview,
+			Cidr:      cidr,
 		}
 		specs, found := ipGroup.Groups[groupA]
 		Expect(found).To(BeTrue())
@@ -49,6 +61,8 @@ var _ = Describe("Orchestration tests", func() {
 			Name:      "ing2",
 			Namespace: ns,
 			Hosts:     []string{"baz.com"},
+			Netview:   netview,
+			Cidr:      cidr,
 		}
 		specs, found = ipGroup.Groups[groupA]
 		Expect(found).To(BeTrue())
@@ -62,6 +76,8 @@ var _ = Describe("Orchestration tests", func() {
 			Name:      "ing3",
 			Namespace: ns,
 			Hosts:     []string{"qux.com"},
+			Netview:   netview,
+			Cidr:      cidr,
 		}
 		specs, found = ipGroup.Groups[groupB]
 		Expect(found).To(BeTrue())
@@ -75,11 +91,15 @@ var _ = Describe("Orchestration tests", func() {
 			Name:      "ing3",
 			Namespace: ns,
 			Hosts:     []string{"qux.com", "foobar.com"},
+			Netview:   netview,
+			Cidr:      cidr,
 		}
 		specs, found = ipGroup.Groups[groupB]
 		Expect(found).To(BeTrue())
 		Expect(specs).To(Equal([]Spec{spec3}))
 		Expect(ipGroup.NumHosts()).To(Equal(5))
+		Expect(ipGroup.GetAllHosts()).To(Equal(
+			[]string{"bar.com", "baz.com", "foo.com", "foobar.com", "qux.com"}))
 
 		// Remove host
 		ipGroup.removeHost("qux.com", resourceKey{

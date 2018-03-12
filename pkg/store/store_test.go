@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package controller
+package store
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+const A = "A"
+const CNAME = "CNAME"
 
 var _ = Describe("Store tests", func() {
 	It("creates a store", func() {
@@ -29,43 +32,45 @@ var _ = Describe("Store tests", func() {
 
 	Context("class methods", func() {
 		var st *Store
+		netview := "default"
+		cidr := "1.2.3.0/24"
 		BeforeEach(func() {
 			st = NewStore()
 			Expect(st).ToNot(BeNil())
 		})
 
 		It("adds records", func() {
-			st.addRecord("1.2.3.4", []string{"bar.com", "foo.com"})
+			st.AddRecord("1.2.3.4", "bar.com", A, netview, cidr)
 			record := st.getHosts("1.2.3.4")
-			Expect(record).To(Equal([]string{"bar.com", "foo.com"}))
+			Expect(record).To(Equal([]string{"bar.com"}))
 
-			st.addRecord("1.2.3.4", []string{"baz.com"})
+			st.AddRecord("1.2.3.4", "baz.com", CNAME, netview, cidr)
 			record = st.getHosts("1.2.3.4")
-			Expect(record).To(Equal([]string{"bar.com", "baz.com", "foo.com"}))
+			Expect(record).To(Equal([]string{"bar.com", "baz.com"}))
 
-			st.addRecord("5.6.7.8", []string{"qux.com"})
+			st.AddRecord("5.6.7.8", "qux.com", A, netview, cidr)
 			record = st.getHosts("5.6.7.8")
 			Expect(record).To(Equal([]string{"qux.com"}))
 			Expect(len(st.Records)).To(Equal(2))
 
 			// Try adding a record again; shouldn't be added twice
-			st.addRecord("5.6.7.8", []string{"qux.com"})
+			st.AddRecord("5.6.7.8", "qux.com", A, netview, cidr)
 			record = st.getHosts("5.6.7.8")
 			Expect(record).To(Equal([]string{"qux.com"}))
 		})
 
 		It("overwrites records", func() {
-			st.addRecord("1.2.3.4", []string{"foo.com"})
+			st.AddRecord("1.2.3.4", "foo.com", A, netview, cidr)
 			record := st.getHosts("1.2.3.4")
 			Expect(record).To(Equal([]string{"foo.com"}))
 
-			st.overwriteRecord("1.2.3.4", []string{"bar.com"})
+			st.overwriteRecord("1.2.3.4", "bar.com", A, netview, cidr)
 			record = st.getHosts("1.2.3.4")
 			Expect(record).To(Equal([]string{"bar.com"}))
 		})
 
 		It("deletes records", func() {
-			st.addRecord("1.2.3.4", []string{"foo.com"})
+			st.AddRecord("1.2.3.4", "foo.com", CNAME, netview, cidr)
 			record := st.getHosts("1.2.3.4")
 			Expect(record).To(Equal([]string{"foo.com"}))
 
@@ -77,7 +82,10 @@ var _ = Describe("Store tests", func() {
 		})
 
 		It("deletes hosts from records", func() {
-			st.addRecord("1.2.3.4", []string{"bar.com", "baz.com", "foo.com", "qux.com"})
+			st.AddRecord("1.2.3.4", "bar.com", A, netview, cidr)
+			st.AddRecord("1.2.3.4", "baz.com", CNAME, netview, cidr)
+			st.AddRecord("1.2.3.4", "foo.com", CNAME, netview, cidr)
+			st.AddRecord("1.2.3.4", "qux.com", CNAME, netview, cidr)
 			record := st.getHosts("1.2.3.4")
 			Expect(record).To(Equal([]string{"bar.com", "baz.com", "foo.com", "qux.com"}))
 
@@ -85,19 +93,19 @@ var _ = Describe("Store tests", func() {
 			record = st.getHosts("1.2.3.4")
 			Expect(record).To(Equal([]string{"baz.com", "foo.com", "qux.com"}))
 
-			st.deleteHosts([]string{"baz.com", "foo.com"})
+			st.DeleteHosts([]string{"baz.com", "foo.com"})
 			record = st.getHosts("1.2.3.4")
 			Expect(record).To(Equal([]string{"qux.com"}))
 		})
 
 		It("gets an IP address for a host", func() {
-			st.addRecord("1.2.3.4", []string{"foo.com"})
-			st.addRecord("5.6.7.8", []string{"bar.com"})
-			ip := st.getIP("foo.com")
+			st.AddRecord("1.2.3.4", "foo.com", A, netview, cidr)
+			st.AddRecord("5.6.7.8", "bar.com", CNAME, netview, cidr)
+			ip := st.GetIP("foo.com")
 			Expect(ip).To(Equal("1.2.3.4"))
-			ip = st.getIP("bar.com")
+			ip = st.GetIP("bar.com")
 			Expect(ip).To(Equal("5.6.7.8"))
-			ip = st.getIP("fake.com")
+			ip = st.GetIP("fake.com")
 			Expect(ip).To(Equal(""))
 		})
 	})

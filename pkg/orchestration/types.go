@@ -30,9 +30,15 @@ type (
 		Groups     IPGroups
 		GroupMutex *sync.Mutex
 	}
-	// key is a groupName; Specs in the same group will share an IP address
+	// Specs in the same group will share an IP address
 	// Specs in the "" (empty string) group will get their own IP addresses
-	IPGroups map[string][]Spec
+	IPGroups map[groupKey][]Spec
+
+	groupKey struct {
+		Name    string
+		Netview string
+		Cidr    string
+	}
 
 	// represents a single resource and its hosts
 	Spec struct {
@@ -40,5 +46,7 @@ type (
 		Name      string
 		Namespace string
 		Hosts     []string
+		Netview   string // used for non-shared IP group
+		Cidr      string // used for non-shared IP group
 	}
 )

@@ -16,18 +16,23 @@
 
 package orchestration
 
-import "reflect"
+import (
+	"reflect"
+	"sort"
+)
 
 // Defines the interface the orchestration should implement
 type Client interface {
 	// Runs the client, watching for resources
 	Run(stopCh <-chan struct{})
+	// Writes the IPGroups to the Controller
+	writeIPGroups()
 }
 
 // Adds or updates a list of hosts that share an IP address (same groupName)
 // Resources in the "" group will not share IP addresses
 func (ipGrp *IPGroup) addToIPGroup(
-	groupName,
+	gKey groupKey,
 	kind,
 	rsName,
 	namespace string,
@@ -42,8 +47,10 @@ func (ipGrp *IPGroup) addToIPGroup(
 		Name:      rsName,
 		Namespace: namespace,
 		Hosts:     hosts,
+		Netview:   gKey.Netview,
+		Cidr:      gKey.Cidr,
 	}
-	if grp, found := ipGrp.Groups[groupName]; found {
+	if grp, found := ipGrp.Groups[gKey]; found {
 		var haveSpec bool
 		for i, spec := range grp {
 			if spec.equals(newSpec) {
@@ -55,14 +62,14 @@ func (ipGrp *IPGroup) addToIPGroup(
 					}
 				}
 			}
-			ipGrp.Groups[groupName][i].Hosts = spec.Hosts
+			ipGrp.Groups[gKey][i].Hosts = spec.Hosts
 		}
 		if !haveSpec {
-			ipGrp.Groups[groupName] = append(ipGrp.Groups[groupName], newSpec)
+			ipGrp.Groups[gKey] = append(ipGrp.Groups[gKey], newSpec)
 			updated = true
 		}
 	} else {
-		ipGrp.Groups[groupName] = []Spec{newSpec}
+		ipGrp.Groups[gKey] = []Spec{newSpec}
 		updated = true
 	}
 	return updated
@@ -97,14 +104,13 @@ func (ipGrp *IPGroup) removeFromIPGroup(rmSpec Spec) {
 // Removes a host from its Spec
 func (ipGrp *IPGroup) removeHost(rmHost string, key resourceKey) {
 	var deleted bool
-	for name, grp := range ipGrp.Groups {
+	for gKey, grp := range ipGrp.Groups {
 		for i, spec := range grp {
 			if spec.equalsKey(key) {
 				for j, host := range spec.Hosts {
 					if host == rmHost {
-						copy(spec.Hosts[j:], spec.Hosts[j+1:])
-						spec.Hosts[len(spec.Hosts)-1] = ""
-						ipGrp.Groups[name][i].Hosts = spec.Hosts[:len(spec.Hosts)-1]
+						spec.Hosts = append(spec.Hosts[:j], spec.Hosts[j+1:]...)
+						ipGrp.Groups[gKey][i].Hosts = spec.Hosts
 						deleted = true
 						break
 					}
@@ -117,12 +123,24 @@ func (ipGrp *IPGroup) removeHost(rmHost string, key resourceKey) {
 	}
 }
 
+// Returns all hosts across IPGroups
+func (ipGrp *IPGroup) GetAllHosts() []string {
+	var hosts []string
+	for _, grp := range ipGrp.Groups {
+		for _, spec := range grp {
+			hosts = append(hosts, spec.Hosts...)
+		}
+	}
+	sort.Strings(hosts)
+	return hosts
+}
+
 // Returns a Spec for a resource
 func (ipGrp *IPGroup) getSpec(key resourceKey) (bool, Spec, string) {
-	for name, grp := range ipGrp.Groups {
+	for gKey, grp := range ipGrp.Groups {
 		for _, spec := range grp {
 			if spec.equalsKey(key) {
-				return true, spec, name
+				return true, spec, gKey.Name
 			}
 		}
 	}

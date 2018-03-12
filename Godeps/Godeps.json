@@ -132,6 +132,11 @@
 			"Rev": "6633656539c1639d9d78127b7d47c622b5d7b6dc"
 		},
 		{
+			"ImportPath": "github.com/infobloxopen/infoblox-go-client",
+			"Comment": "v0.2.0-3-gb812144",
+			"Rev": "b81214400b7d32bf8575d3e10cbf305ca7723230"
+		},
+		{
 			"ImportPath": "github.com/json-iterator/go",
 			"Comment": "1.0.5-1-gbca911d",
 			"Rev": "bca911dae0735b8220ddb30236e11cff9d959f19"
@@ -307,6 +312,11 @@
 			"ImportPath": "github.com/peterbourgon/diskv",
 			"Comment": "v2.0.1-4-g2973218",
 			"Rev": "2973218375c3d13162e1d3afe1708aaee318ef3f"
+		},
+		{
+			"ImportPath": "github.com/sirupsen/logrus",
+			"Comment": "v1.0.4-2-g768a92a",
+			"Rev": "768a92a02685ee7535069fc1581341b41bab9b72"
 		},
 		{
 			"ImportPath": "github.com/spf13/pflag",
