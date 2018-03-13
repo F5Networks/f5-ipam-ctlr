@@ -29,12 +29,12 @@ var _ = Describe("Orchestration tests", func() {
 		ns := "default"
 		netview := "default"
 		cidr := "1.2.3.0/24"
-		groupA := groupKey{
+		groupA := GroupKey{
 			Name:    "A",
 			Netview: netview,
 			Cidr:    cidr,
 		}
-		groupB := groupKey{
+		groupB := GroupKey{
 			Name:    "B",
 			Netview: netview,
 			Cidr:    cidr,

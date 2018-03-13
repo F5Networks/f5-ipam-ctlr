@@ -25,11 +25,6 @@ const A = "A"
 const CNAME = "CNAME"
 
 var _ = Describe("Store tests", func() {
-	It("creates a store", func() {
-		st := NewStore()
-		Expect(st).ToNot(BeNil())
-	})
-
 	Context("class methods", func() {
 		var st *Store
 		netview := "default"
@@ -96,6 +91,10 @@ var _ = Describe("Store tests", func() {
 			st.DeleteHosts([]string{"baz.com", "foo.com"})
 			record = st.getHosts("1.2.3.4")
 			Expect(record).To(Equal([]string{"qux.com"}))
+
+			st.DeleteHosts([]string{"qux.com"})
+			record = st.getHosts("1.2.3.4")
+			Expect(record).To(Equal([]string{}))
 		})
 
 		It("gets an IP address for a host", func() {
@@ -107,6 +106,16 @@ var _ = Describe("Store tests", func() {
 			Expect(ip).To(Equal("5.6.7.8"))
 			ip = st.GetIP("fake.com")
 			Expect(ip).To(Equal(""))
+		})
+	})
+
+	Context("util functions", func() {
+		It("returns whether a slice contains a value", func() {
+			s := []string{"one", "two", "three"}
+			one := "one"
+			five := "five"
+			Expect(contains(s, one)).To(BeTrue())
+			Expect(contains(s, five)).To(BeFalse())
 		})
 	})
 })

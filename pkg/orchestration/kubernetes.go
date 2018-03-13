@@ -642,7 +642,7 @@ func (client *K8sClient) syncResource(rKey resourceKey) error {
 			log.Debugf("Found host '%v' for ConfigMap '%s'", host, rKey.Name)
 
 			ret = client.ipGroup.addToIPGroup(
-				groupKey{
+				GroupKey{
 					Name:    "",
 					Netview: netview,
 					Cidr:    cidr,
@@ -689,7 +689,7 @@ func (client *K8sClient) syncResource(rKey resourceKey) error {
 				if host, ok := ing.ObjectMeta.Annotations[hostnameAnnotation]; ok {
 					log.Debugf("Found host '%v' for Ingress '%s'", host, rKey.Name)
 					ret = client.ipGroup.addToIPGroup(
-						groupKey{
+						GroupKey{
 							Name:    groupName,
 							Netview: netview,
 							Cidr:    cidr,
@@ -710,7 +710,7 @@ func (client *K8sClient) syncResource(rKey resourceKey) error {
 				}
 				log.Debugf("Found hosts '%v' for Ingress '%s'", hosts, rKey.Name)
 				ret = client.ipGroup.addToIPGroup(
-					groupKey{
+					GroupKey{
 						Name:    groupName,
 						Netview: netview,
 						Cidr:    cidr,

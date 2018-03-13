@@ -20,17 +20,17 @@ import "sort"
 
 // Map of all IP addresses and their corresponding hostnames, netviews, and CIDRs
 type Store struct {
-	Records  map[string]hostSet
+	Records  map[string]HostSet
 	Netviews map[string]string
 	Cidrs    map[string]string
 }
 
 // Map of hosts (value is record type)
-type hostSet map[string]string
+type HostSet map[string]string
 
 func NewStore() *Store {
 	var st Store
-	st.Records = make(map[string]hostSet)
+	st.Records = make(map[string]HostSet)
 	st.Netviews = make(map[string]string)
 	st.Cidrs = make(map[string]string)
 	return &st
@@ -51,7 +51,7 @@ func (st *Store) AddRecord(ip, host, recordType, netview, cidr string) {
 
 // Overwrites the contents of a record
 func (st *Store) overwriteRecord(ip, host, recordType, netview, cidr string) {
-	st.Records[ip] = make(hostSet)
+	st.Records[ip] = make(HostSet)
 	st.Records[ip][host] = recordType
 	st.Netviews[ip] = netview
 	st.Cidrs[ip] = cidr

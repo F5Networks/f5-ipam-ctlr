@@ -32,7 +32,7 @@ type Client interface {
 // Adds or updates a list of hosts that share an IP address (same groupName)
 // Resources in the "" group will not share IP addresses
 func (ipGrp *IPGroup) addToIPGroup(
-	gKey groupKey,
+	gKey GroupKey,
 	kind,
 	rsName,
 	namespace string,

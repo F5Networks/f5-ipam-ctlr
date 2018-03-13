@@ -29,13 +29,19 @@ import (
 	ibclient "github.com/infobloxopen/infoblox-go-client"
 )
 
-// Maps host records to the Infoblox "ref" strings
+// Map of host records to their Infoblox "ref" strings
 type recordRef map[string]string
+
+// Convert ibclient.ObjectManager to interface for unit testing
+type objectManager interface {
+	AllocateIP(netview, cidr, ipAddr, macAddress, vmID string) (*ibclient.FixedAddress, error)
+	ReleaseIP(netview, cidr, ipAddr, macAddr string) (string, error)
+}
 
 // Client that the controller uses to talk to Infoblox
 type IBloxClient struct {
 	conn      ibclient.IBConnector
-	objMgr    ibclient.ObjectManager
+	objMgr    objectManager
 	recordRef recordRef
 }
 
@@ -73,7 +79,7 @@ func NewInfobloxClient(
 
 	iClient := &IBloxClient{
 		conn:      conn,
-		objMgr:    *objMgr,
+		objMgr:    objMgr,
 		recordRef: make(recordRef),
 	}
 
