@@ -93,6 +93,9 @@ func (client *mockOClient) writeIPGroups() {
 	}
 }
 
+// Mock: not used
+func (client *mockOClient) AnnotateResources(ip string, hosts []string) {}
+
 // Mocks the manager client
 type mockIClient struct {
 	manager.Client
