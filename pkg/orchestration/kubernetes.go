@@ -70,6 +70,8 @@ type K8sClient struct {
 
 	// map of resources, grouped by specified groupname
 	ipGroup IPGroup
+	// tells whether IPGroups were updated and need to be written out
+	updated bool
 
 	// Channel for sending data to controller
 	channel chan<- *IPGroup
@@ -315,7 +317,6 @@ func (client *K8sClient) addConfigMap(obj interface{}) {
 
 // Checks if an updated ConfigMap is still watched; process normally
 func (client *K8sClient) updateConfigMap(old interface{}, cur interface{}) {
-	var updated bool
 	cm := cur.(*v1.ConfigMap)
 
 	if ok, key := client.checkValidConfigMap(old); ok {
@@ -334,16 +335,12 @@ func (client *K8sClient) updateConfigMap(old interface{}, cur interface{}) {
 			// New ConfigMap is no longer valid, remove its data from IPGroup
 			if specFound {
 				client.ipGroup.removeFromIPGroup(spec)
-				updated = true
+				client.writeIPGroups()
 			}
 		}
 	} else if ok, key = client.checkValidConfigMap(cur); ok {
 		// Old ConfigMap wasn't valid, but new one is
 		client.rsQueue.Add(*key)
-	}
-
-	if updated {
-		client.writeIPGroups()
 	}
 }
 
@@ -367,7 +364,6 @@ func (client *K8sClient) addIngress(obj interface{}) {
 
 // Checks if an updated Ingress is still watched; process normally
 func (client *K8sClient) updateIngress(old interface{}, cur interface{}) {
-	var updated bool
 	ing := cur.(*v1beta1.Ingress)
 
 	if ok, key := client.checkValidIngress(old); ok {
@@ -378,6 +374,7 @@ func (client *K8sClient) updateIngress(old interface{}, cur interface{}) {
 				for _, host := range spec.Hosts {
 					if !ingHostExists(ing, host) {
 						client.ipGroup.removeHost(host, *key)
+						client.updated = true
 					}
 				}
 				// Check if group has changed
@@ -390,16 +387,12 @@ func (client *K8sClient) updateIngress(old interface{}, cur interface{}) {
 			// New Ingress is no longer valid, remove its data from IPGroup
 			if specFound {
 				client.ipGroup.removeFromIPGroup(spec)
-				updated = true
+				client.writeIPGroups()
 			}
 		}
 	} else if ok, key = client.checkValidIngress(cur); ok {
 		// Old Ingress wasn't valid, but new one is
 		client.rsQueue.Add(*key)
-	}
-
-	if updated {
-		client.writeIPGroups()
 	}
 }
 
@@ -606,7 +599,7 @@ func (client *K8sClient) processNextResource() bool {
 
 // Extract the hostname data from a resource and save the information
 func (client *K8sClient) syncResource(rKey resourceKey) error {
-	var updated, ret bool
+	var ret bool
 	rsInf, _ := client.getResourceInformer(rKey.Namespace)
 	if rKey.Kind == "ConfigMap" {
 		cfgMaps, err := rsInf.cfgMapInformer.GetIndexer().ByIndex("name", rKey.Name)
@@ -653,7 +646,7 @@ func (client *K8sClient) syncResource(rKey resourceKey) error {
 				rKey.Namespace,
 				[]string{host},
 			)
-			updated = updated || ret
+			client.updated = client.updated || ret
 		}
 	} else if rKey.Kind == "Ingress" {
 		ingresses, err := rsInf.ingInformer.GetIndexer().ByIndex("name", rKey.Name)
@@ -700,7 +693,7 @@ func (client *K8sClient) syncResource(rKey resourceKey) error {
 						rKey.Namespace,
 						[]string{host},
 					)
-					updated = updated || ret
+					client.updated = client.updated || ret
 				} else {
 					log.Warningf("No hostname annotation provided for Ingress '%v'.", rKey.Name)
 				}
@@ -721,12 +714,12 @@ func (client *K8sClient) syncResource(rKey resourceKey) error {
 					rKey.Namespace,
 					hosts,
 				)
-				updated = updated || ret
+				client.updated = client.updated || ret
 			}
 		}
 	}
 
-	if updated {
+	if client.updated {
 		client.writeIPGroups()
 	}
 	return nil
@@ -748,6 +741,8 @@ func (client *K8sClient) writeIPGroups() {
 			}
 		}
 		client.initialState = true
+		// Reset updated back to false
+		client.updated = false
 	}
 }
 

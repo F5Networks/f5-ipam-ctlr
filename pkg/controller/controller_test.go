@@ -107,7 +107,9 @@ type mockIClient struct {
 }
 
 // Mock dummy functions to adhere to interface
-func (client *mockIClient) CreateARecord(name, ipAddr, netview string)           {}
+func (client *mockIClient) CreateARecord(name, ipAddr, netview string) bool {
+	return true
+}
 func (client *mockIClient) DeleteARecord(name, ipAddr, netview, cidr string)     {}
 func (client *mockIClient) CreateCNAMERecord(name, canonical, netview string)    {}
 func (client *mockIClient) DeleteCNAMERecord(name, ipAddr, netview, cidr string) {}
@@ -191,7 +193,7 @@ var _ = Describe("Controller tests", func() {
 		var ctlr *Controller
 		var ipGroup orch.IPGroup
 		BeforeEach(func() {
-			ctlr = NewController(oClient, iClient, oChan)
+			ctlr = NewController(oClient, iClient, oChan, 30)
 			Expect(ctlr).ToNot(BeNil())
 			Expect(ctlr.store).ToNot(BeNil())
 			ipGroup = mockIPGroups()
