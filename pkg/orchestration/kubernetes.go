@@ -17,6 +17,8 @@
 package orchestration
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"sync"
 	"time"
@@ -74,7 +76,7 @@ type K8sClient struct {
 	updated bool
 
 	// Channel for sending data to controller
-	channel chan<- *IPGroup
+	channel chan<- bytes.Buffer
 }
 
 // Struct to allow NewKubernetesClient to receive all or some parameters
@@ -83,7 +85,7 @@ type KubeParams struct {
 	restClient     rest.Interface
 	Namespaces     []string
 	NamespaceLabel string
-	Channel        chan<- *IPGroup
+	Channel        chan<- bytes.Buffer
 }
 
 // Sets up an interface with Kubernetes
@@ -734,8 +736,16 @@ func (client *K8sClient) writeIPGroups() {
 		if client.channel != nil {
 			log.Infof("Kubernetes client wrote %v hosts to Controller.",
 				client.ipGroup.NumHosts())
+
+			var ipBytes bytes.Buffer
+			err := gob.NewEncoder(&ipBytes).Encode(client.ipGroup.Groups)
+			if err != nil {
+				log.Errorf("Couldn't encode IPGroups: %v", err)
+				return
+			}
+
 			select {
-			case client.channel <- &client.ipGroup:
+			case client.channel <- ipBytes:
 				log.Debug("Kubernetes client received ACK from Controller.")
 			case <-time.After(3 * time.Second):
 			}

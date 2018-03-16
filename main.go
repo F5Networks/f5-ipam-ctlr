@@ -17,6 +17,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -244,7 +245,7 @@ func main() {
 	stopCh := make(chan struct{})
 
 	// Create a channel for the orchestration client to send data to the controller
-	oChan := make(chan *orchestration.IPGroup)
+	oChan := make(chan bytes.Buffer)
 
 	orchestration.IPAM = *mgr
 

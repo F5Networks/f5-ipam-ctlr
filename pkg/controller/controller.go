@@ -17,7 +17,10 @@
 package controller
 
 import (
+	"bytes"
+	"encoding/gob"
 	"reflect"
+	"sync"
 	"time"
 
 	log "github.com/F5Networks/f5-ipam-ctlr/pkg/vlogger"
@@ -34,7 +37,7 @@ type Controller struct {
 	oClient orchestration.Client
 	iClient manager.Client
 	// Channel for receiving data from the orchestration
-	oChan <-chan *orchestration.IPGroup
+	oChan <-chan bytes.Buffer
 	// Interval at which to verify the IPAM system configuration
 	vInterval int
 	// Store for tracking IP to hosts mappings
@@ -44,7 +47,7 @@ type Controller struct {
 func NewController(
 	oClient orchestration.Client,
 	iClient manager.Client,
-	oChan <-chan *orchestration.IPGroup,
+	oChan <-chan bytes.Buffer,
 	verifyInterval int,
 ) *Controller {
 	return &Controller{
@@ -61,7 +64,14 @@ func (ctlr *Controller) Run(stopCh <-chan struct{}) {
 
 	ctlr.refreshStore()
 	ctlr.oClient.Run(stopCh)
-	handleIPGroups := func(ipGroup *orchestration.IPGroup) {
+	handleIPGroups := func(ipGroup *orchestration.IPGroup, ipBytes bytes.Buffer) {
+		ipGroup.Groups = make(orchestration.IPGroups)
+		err := gob.NewDecoder(&ipBytes).Decode(&ipGroup.Groups)
+		if err != nil {
+			log.Errorf("Could not decode IPGroups: %v", err)
+			return
+		}
+
 		if ipGroup != nil {
 			log.Debugf("Controller received %v hosts from Orchestration client.",
 				ipGroup.NumHosts())
@@ -73,12 +83,14 @@ func (ctlr *Controller) Run(stopCh <-chan struct{}) {
 	}
 	go func() {
 		log.Debug("Controller waiting for updates from Orchestration client.")
-		var ipGroup *orchestration.IPGroup
+		ipGroup := &orchestration.IPGroup{
+			GroupMutex: new(sync.Mutex),
+		}
 		for {
 			if ctlr.vInterval != 0 {
 				select {
-				case ipGroup = <-ctlr.oChan:
-					handleIPGroups(ipGroup)
+				case ipBytes := <-ctlr.oChan:
+					handleIPGroups(ipGroup, ipBytes)
 				case <-time.After(time.Duration(ctlr.vInterval) * time.Second):
 					// Periodically check the IPAM system to see if any changes have occurred
 					if ipGroup != nil && ctlr.refreshStore() {
@@ -87,8 +99,8 @@ func (ctlr *Controller) Run(stopCh <-chan struct{}) {
 				}
 			} else {
 				select {
-				case ipGroup = <-ctlr.oChan:
-					handleIPGroups(ipGroup)
+				case ipBytes := <-ctlr.oChan:
+					handleIPGroups(ipGroup, ipBytes)
 				}
 			}
 		}
