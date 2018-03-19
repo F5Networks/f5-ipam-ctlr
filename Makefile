@@ -16,7 +16,7 @@ BASE_OS ?= alpine
 
 all: local-build
 
-test: local-go-test
+test: local-test
 
 prod: prod-build
 
