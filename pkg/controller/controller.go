@@ -33,6 +33,7 @@ import (
 const A = "A"
 const CNAME = "CNAME"
 
+// Controller manages communication between the orchestration and ipam system
 type Controller struct {
 	oClient orchestration.Client
 	iClient manager.Client
@@ -44,6 +45,7 @@ type Controller struct {
 	store *ipStore.Store
 }
 
+// NewController creates a Controller object
 func NewController(
 	oClient orchestration.Client,
 	iClient manager.Client,
@@ -59,6 +61,7 @@ func NewController(
 	}
 }
 
+// Run starts up the orchestration client and processes IPGroups as they are received
 func (ctlr *Controller) Run(stopCh <-chan struct{}) {
 	log.Infof("Controller started: (%p)", ctlr)
 

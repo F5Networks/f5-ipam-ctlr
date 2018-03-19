@@ -47,10 +47,10 @@ const cidrAnnotation = "ipam.f5.com/network-cidr"
 const hostnameAnnotation = "virtual-server.f5.com/hostname"
 const ipAnnotation = "virtual-server.f5.com/ip"
 
-// The IPAM system being used
+// IPAM system being used
 var IPAM string
 
-// Client that the controller uses to talk to Kubernetes
+// K8sClient that the controller uses to talk to Kubernetes
 type K8sClient struct {
 	// Kubernetes client
 	kubeClient kubernetes.Interface
@@ -79,7 +79,7 @@ type K8sClient struct {
 	channel chan<- bytes.Buffer
 }
 
-// Struct to allow NewKubernetesClient to receive all or some parameters
+// KubeParams allows NewKubernetesClient to receive all or some parameters
 type KubeParams struct {
 	KubeClient     kubernetes.Interface
 	restClient     rest.Interface
@@ -88,7 +88,7 @@ type KubeParams struct {
 	Channel        chan<- bytes.Buffer
 }
 
-// Sets up an interface with Kubernetes
+// NewKubernetesClient sets up an interface with Kubernetes
 func NewKubernetesClient(
 	params *KubeParams,
 ) (*K8sClient, error) {
@@ -164,10 +164,10 @@ func (client *K8sClient) addNamespace(
 
 	if client.watchingAllNamespaces() {
 		return nil, fmt.Errorf(
-			"Cannot add additional namespaces when already watching all.")
+			"cannot add additional namespaces when already watching all")
 	} else if len(client.rsInformers) > 0 && "" == namespace {
 		return nil, fmt.Errorf(
-			"Cannot watch all namespaces when already watching specific ones.")
+			"cannot watch all namespaces when already watching specific ones")
 	}
 	var rsInf *rsInformer
 	var found bool
@@ -188,7 +188,7 @@ func (client *K8sClient) addNamespaceLabelInformer(
 	defer client.informersMutex.Unlock()
 
 	if nil != client.nsInformer {
-		return fmt.Errorf("Already have a namespace label informer added.")
+		return fmt.Errorf("already have a namespace label informer added")
 	}
 	if 0 != len(client.rsInformers) {
 		return fmt.Errorf("Cannot set a namespace label informer when informers " +
@@ -443,7 +443,7 @@ func (client *K8sClient) checkValidIngress(obj interface{}) (bool, *resourceKey)
 	return false, nil
 }
 
-// Runs the client
+// Run starts the kubernetes client, watching for resource updates
 func (client *K8sClient) Run(stopCh <-chan struct{}) {
 	log.Infof("Kubernetes client started: (%p)", client)
 	go client.runImpl(stopCh)
@@ -756,7 +756,7 @@ func (client *K8sClient) writeIPGroups() {
 	}
 }
 
-// Annotates resources that contain given hosts with the given IP address
+// AnnotateResources that contain given hosts with the given IP address
 func (client *K8sClient) AnnotateResources(ip string, hosts []string) {
 	var name, namespace string
 	specsForIP := client.ipGroup.getSpecsWithHosts(hosts)
@@ -819,16 +819,16 @@ func ingHostExists(ing *v1beta1.Ingress, host string) bool {
 			return true
 		}
 		return false
-	} else { // multi-service
-		var hosts []string
-		for _, rule := range ing.Spec.Rules {
-			hosts = append(hosts, rule.Host)
-		}
-		if contains(hosts, host) {
-			return true
-		}
-		return false
 	}
+	// multi-service
+	var hosts []string
+	for _, rule := range ing.Spec.Rules {
+		hosts = append(hosts, rule.Host)
+	}
+	if contains(hosts, host) {
+		return true
+	}
+	return false
 }
 
 func newListWatch(
@@ -860,7 +860,7 @@ func newListWatch(
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
 
-// Index function that indexes based on an object's name
+// MetaNameIndexFunc indexes based on an object's name
 func MetaNameIndexFunc(obj interface{}) ([]string, error) {
 	meta, err := meta.Accessor(obj)
 	if err != nil {

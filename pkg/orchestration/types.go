@@ -19,28 +19,32 @@ package orchestration
 import "sync"
 
 type (
-	// Defines a resource for processing
+	// resourceKey defines a resource for processing
 	resourceKey struct {
 		Kind      string
 		Name      string
 		Namespace string
 	}
 
+	// IPGroup is a struct of IPGroups and a protective mutex
 	IPGroup struct {
 		Groups     IPGroups
 		GroupMutex *sync.Mutex
 	}
+
+	// IPGroups are groups of Specs
 	// Specs in the same group will share an IP address
 	// Specs in the "" (empty string) group will get their own IP addresses
 	IPGroups map[GroupKey][]Spec
 
+	// GroupKey indexes into a group of Specs
 	GroupKey struct {
 		Name    string
 		Netview string
 		Cidr    string
 	}
 
-	// represents a single resource and its hosts
+	// Spec represents a single resource and its hosts
 	Spec struct {
 		Kind      string
 		Name      string

@@ -18,7 +18,7 @@ package manager
 
 import store "github.com/F5Networks/f5-ipam-ctlr/pkg/store"
 
-// Defines the interface that the IPAM system should implement
+// Client defines the interface that the IPAM system should implement
 type Client interface {
 	// Creates an A record
 	CreateARecord(name, ipAddr, netview string) bool
