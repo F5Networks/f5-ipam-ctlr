@@ -6,7 +6,7 @@ The F5 IPAM Controller interfaces with an IPAM system to allocate IP addresses f
 The controller currently supports the following environments:
 
 ### Orchestrations:
-[Kubernetes](https://kubernetes.io/)
+[Kubernetes](https://kubernetes.io/)/[OpenShift](https://www.openshift.com/)
 
 ### IPAM systems:
 [Infoblox](https://www.infoblox.com/)
