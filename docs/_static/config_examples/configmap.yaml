@@ -1,0 +1,39 @@
+# Sample Kubernetes F5 Resource ConfigMap
+# You can add the 'ipam.f5.com' annotations to an existing or new resource
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: example-vs
+  namespace: default
+  labels:
+    f5type: virtual-server
+  annotations:
+    'ipam.f5.com/ip-allocation': 'dynamic'
+    'ipam.f5.com/network-cidr': '1.2.3.0/24'
+    'ipam.f5.com/infoblox-netview': 'default'
+    'ipam.f5.com/hostname': 'site.example.com'
+data:
+  schema: "f5schemadb://bigip-virtual-server_v0.1.7.json"
+  data: |
+    {
+      "virtualServer": {
+        "frontend": {
+          "balance": "round-robin",
+          "mode": "http",
+          "partition": "k8s",
+          "virtualAddress": {
+            "port": 80
+          }
+        },
+        "backend": {
+          "serviceName": "my-service",
+          "servicePort": 80,
+          "healthMonitors": [{
+            "send": "GET / HTTP/1.0\\r\\n\\r\\n",
+            "interval": 15,
+            "timeout": 20,
+            "protocol": "http"
+          }]
+        }
+      }
+    }

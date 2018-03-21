@@ -1,0 +1,16 @@
+# Sample Kubernetes Ingress Resource
+# You can add the 'ipam.f5.com' annotations to an existing or new resource
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: single-service
+  annotations:
+     'ipam.f5.com/ip-allocation': 'dynamic'
+     'ipam.f5.com/infoblox-netview': 'default'
+     'ipam.f5.com/network-cidr': '1.2.3.0/24'
+     'ipam.f5.com/hostname': 'example.com'
+spec:
+  backend:
+    serviceName: my-service
+    servicePort: 80
