@@ -17,6 +17,8 @@
 package controller
 
 import (
+	"bytes"
+	"encoding/gob"
 	"sort"
 	"sync"
 	"time"
@@ -76,7 +78,7 @@ func mockIPGroups() orch.IPGroup {
 // Mocks the orchestration client
 type mockOClient struct {
 	orch.Client
-	oChan chan<- *orch.IPGroup
+	oChan chan<- bytes.Buffer
 }
 
 // Mock: calls writeIPGroups when Run
@@ -87,8 +89,10 @@ func (client *mockOClient) Run(stopCh <-chan struct{}) {
 // Mock: writes the sample IPGroups to the shared channel
 func (client *mockOClient) writeIPGroups() {
 	ipGroups := mockIPGroups()
+	var ipBytes bytes.Buffer
+	gob.NewEncoder(&ipBytes).Encode(ipGroups.Groups)
 	select {
-	case client.oChan <- &ipGroups:
+	case client.oChan <- ipBytes:
 	case <-time.After(3 * time.Second):
 	}
 }
@@ -107,7 +111,9 @@ type mockIClient struct {
 }
 
 // Mock dummy functions to adhere to interface
-func (client *mockIClient) CreateARecord(name, ipAddr, netview string)           {}
+func (client *mockIClient) CreateARecord(name, ipAddr, netview string) bool {
+	return true
+}
 func (client *mockIClient) DeleteARecord(name, ipAddr, netview, cidr string)     {}
 func (client *mockIClient) CreateCNAMERecord(name, canonical, netview string)    {}
 func (client *mockIClient) DeleteCNAMERecord(name, ipAddr, netview, cidr string) {}
@@ -172,10 +178,10 @@ func (client *mockIClient) GetRecords() *store.Store {
 var _ = Describe("Controller tests", func() {
 	var oClient orch.Client
 	var iClient manager.Client
-	var oChan chan *orch.IPGroup
+	var oChan chan bytes.Buffer
 
 	BeforeEach(func() {
-		oChan = make(chan *orch.IPGroup)
+		oChan = make(chan bytes.Buffer)
 		oClient = &mockOClient{
 			oChan: oChan,
 		}
@@ -191,7 +197,7 @@ var _ = Describe("Controller tests", func() {
 		var ctlr *Controller
 		var ipGroup orch.IPGroup
 		BeforeEach(func() {
-			ctlr = NewController(oClient, iClient, oChan)
+			ctlr = NewController(oClient, iClient, oChan, 30)
 			Expect(ctlr).ToNot(BeNil())
 			Expect(ctlr.store).ToNot(BeNil())
 			ipGroup = mockIPGroups()

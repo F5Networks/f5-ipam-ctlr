@@ -17,6 +17,12 @@
 package controller
 
 import (
+	"bytes"
+	"encoding/gob"
+	"reflect"
+	"sync"
+	"time"
+
 	log "github.com/F5Networks/f5-ipam-ctlr/pkg/vlogger"
 
 	"github.com/F5Networks/f5-ipam-ctlr/pkg/manager"
@@ -31,7 +37,9 @@ type Controller struct {
 	oClient orchestration.Client
 	iClient manager.Client
 	// Channel for receiving data from the orchestration
-	oChan <-chan *orchestration.IPGroup
+	oChan <-chan bytes.Buffer
+	// Interval at which to verify the IPAM system configuration
+	vInterval int
 	// Store for tracking IP to hosts mappings
 	store *ipStore.Store
 }
@@ -39,13 +47,15 @@ type Controller struct {
 func NewController(
 	oClient orchestration.Client,
 	iClient manager.Client,
-	oChan <-chan *orchestration.IPGroup,
+	oChan <-chan bytes.Buffer,
+	verifyInterval int,
 ) *Controller {
 	return &Controller{
-		oClient: oClient,
-		iClient: iClient,
-		oChan:   oChan,
-		store:   ipStore.NewStore(),
+		oClient:   oClient,
+		iClient:   iClient,
+		oChan:     oChan,
+		vInterval: verifyInterval,
+		store:     ipStore.NewStore(),
 	}
 }
 
@@ -54,18 +64,43 @@ func (ctlr *Controller) Run(stopCh <-chan struct{}) {
 
 	ctlr.refreshStore()
 	ctlr.oClient.Run(stopCh)
+	handleIPGroups := func(ipGroup *orchestration.IPGroup, ipBytes bytes.Buffer) {
+		ipGroup.Groups = make(orchestration.IPGroups)
+		err := gob.NewDecoder(&ipBytes).Decode(&ipGroup.Groups)
+		if err != nil {
+			log.Errorf("Could not decode IPGroups: %v", err)
+			return
+		}
+
+		if ipGroup != nil {
+			log.Debugf("Controller received %v hosts from Orchestration client.",
+				ipGroup.NumHosts())
+			ctlr.processIPGroups(ipGroup)
+			ctlr.writeIPHosts()
+		} else {
+			log.Error("Controller could not get data from Orchestration client.")
+		}
+	}
 	go func() {
 		log.Debug("Controller waiting for updates from Orchestration client.")
+		ipGroup := &orchestration.IPGroup{
+			GroupMutex: new(sync.Mutex),
+		}
 		for {
-			select {
-			case ipGroup := <-ctlr.oChan:
-				if ipGroup != nil {
-					log.Debugf("Controller received %v hosts from Orchestration client.",
-						ipGroup.NumHosts())
-					ctlr.processIPGroups(ipGroup)
-					ctlr.writeIPHosts()
-				} else {
-					log.Error("Controller could not get data from Orchestration client.")
+			if ctlr.vInterval != 0 {
+				select {
+				case ipBytes := <-ctlr.oChan:
+					handleIPGroups(ipGroup, ipBytes)
+				case <-time.After(time.Duration(ctlr.vInterval) * time.Second):
+					// Periodically check the IPAM system to see if any changes have occurred
+					if ipGroup != nil && ctlr.refreshStore() {
+						ctlr.processIPGroups(ipGroup)
+					}
+				}
+			} else {
+				select {
+				case ipBytes := <-ctlr.oChan:
+					handleIPGroups(ipGroup, ipBytes)
 				}
 			}
 		}
@@ -121,9 +156,12 @@ func (ctlr *Controller) processIPGroups(ipGroup *orchestration.IPGroup) {
 				} else {
 					var recordType string
 					if host == firstHost {
-						ctlr.iClient.CreateARecord(host, nextAddr, netview)
-						addrUsed = true
-						recordType = A
+						if ctlr.iClient.CreateARecord(host, nextAddr, netview) {
+							addrUsed = true
+							recordType = A
+						} else {
+							continue
+						}
 					} else {
 						ctlr.iClient.CreateCNAMERecord(host, firstHost, netview)
 						recordType = CNAME
@@ -186,8 +224,13 @@ func (ctlr *Controller) writeIPHosts() {
 }
 
 // On startup, refreshes the internal store to match the IPAM system's records
-func (ctlr *Controller) refreshStore() {
-	ctlr.store = ctlr.iClient.GetRecords()
+func (ctlr *Controller) refreshStore() bool {
+	ipamStore := ctlr.iClient.GetRecords()
+	if !reflect.DeepEqual(ctlr.store, ipamStore) {
+		ctlr.store = ipamStore
+		return true
+	}
+	return false
 }
 
 func contains(slice []string, val string) bool {

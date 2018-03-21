@@ -21,7 +21,7 @@ import store "github.com/F5Networks/f5-ipam-ctlr/pkg/store"
 // Defines the interface that the IPAM system should implement
 type Client interface {
 	// Creates an A record
-	CreateARecord(name, ipAddr, netview string)
+	CreateARecord(name, ipAddr, netview string) bool
 	// Deletes an A record and releases the IP address
 	DeleteARecord(name, ipAddr, netview, cidr string)
 	// Creates a CNAME record

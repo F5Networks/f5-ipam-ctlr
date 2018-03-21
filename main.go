@@ -17,6 +17,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -50,10 +51,11 @@ var (
 	ibFlags     *flag.FlagSet
 
 	// Global
-	logLevel     *string
-	orch         *string
-	mgr          *string
-	printVersion *bool
+	logLevel       *string
+	orch           *string
+	mgr            *string
+	verifyInterval *int
+	printVersion   *bool
 
 	// Kubernetes
 	inCluster      *bool
@@ -95,6 +97,9 @@ func init() {
 		"Required, orchestration that the controller is running in.")
 	mgr = globalFlags.String("ip-manager", "",
 		"Required, the IPAM system that the controller will interface with.")
+	verifyInterval = globalFlags.Int("verify-interval", 30,
+		"Optional, interval (in seconds) at which to verify the IPAM system configuration. "+
+			"Set to 0 to disable.")
 	printVersion = globalFlags.Bool("version", false, "Optional, print version and exit.")
 
 	// Kubernetes flags
@@ -162,6 +167,10 @@ func verifyArgs() error {
 
 	if len(*mgr) == 0 {
 		return fmt.Errorf("IP-Manager is required.")
+	}
+
+	if *verifyInterval < 0 {
+		return fmt.Errorf("Cannot use negative verify interval.")
 	}
 
 	*orch = strings.ToLower(*orch)
@@ -236,7 +245,7 @@ func main() {
 	stopCh := make(chan struct{})
 
 	// Create a channel for the orchestration client to send data to the controller
-	oChan := make(chan *orchestration.IPGroup)
+	oChan := make(chan bytes.Buffer)
 
 	orchestration.IPAM = *mgr
 
@@ -291,7 +300,7 @@ func main() {
 		log.Fatalf("%v", err)
 	}
 
-	ctlr := controller.NewController(oClient, iClient, oChan)
+	ctlr := controller.NewController(oClient, iClient, oChan, *verifyInterval)
 	ctlr.Run(stopCh)
 
 	signals := make(chan os.Signal, 1)
