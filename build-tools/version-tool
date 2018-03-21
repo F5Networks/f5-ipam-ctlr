@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Tool for determing and diplaying controller version and build info."""
+"""Tool for determining and diplaying controller version and build info."""
 
 import argparse
 import re

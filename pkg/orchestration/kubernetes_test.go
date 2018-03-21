@@ -215,7 +215,8 @@ var _ = Describe("Kubernetes Client tests", func() {
 			Expect(realClient.watchingAllNamespaces()).To(BeFalse())
 
 			// Try adding a namespace label informer (should fail)
-			label, err := labels.Parse("watching")
+			var label labels.Selector
+			label, err = labels.Parse("watching")
 			err = realClient.addNamespaceLabelInformer(label, 0)
 			Expect(err).ToNot(BeNil())
 

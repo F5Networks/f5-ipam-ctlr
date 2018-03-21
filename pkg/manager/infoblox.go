@@ -44,7 +44,7 @@ type objectManager interface {
 	ReleaseIP(netview, cidr, ipAddr, macAddr string) (string, error)
 }
 
-// Client that the controller uses to talk to Infoblox
+// IBloxClient that the controller uses to talk to Infoblox
 type IBloxClient struct {
 	conn      ibclient.IBConnector
 	objMgr    objectManager
@@ -52,7 +52,7 @@ type IBloxClient struct {
 	ea        ibclient.EA
 }
 
-// Struct to allow NewInfobloxClient to receive all or some parameters
+// InfobloxParams allows NewInfobloxClient to receive all or some parameters
 type InfobloxParams struct {
 	Host     string
 	Version  string
@@ -61,7 +61,7 @@ type InfobloxParams struct {
 	Password string
 }
 
-// Sets up an interface with Infoblox
+// NewInfobloxClient sets up an interface with Infoblox
 func NewInfobloxClient(
 	params *InfobloxParams,
 	cmpType string,
@@ -107,7 +107,7 @@ func NewInfobloxClient(
 	return iClient, nil
 }
 
-// Creates an A record
+// CreateARecord creates a new A record in Infoblox
 func (iClient *IBloxClient) CreateARecord(name, ipAddr, netview string) bool {
 	obj := ibclient.NewRecordA(
 		ibclient.RecordA{
@@ -129,7 +129,7 @@ func (iClient *IBloxClient) CreateARecord(name, ipAddr, netview string) bool {
 	return true
 }
 
-// Deletes an A record and releases the IP address
+// DeleteARecord deletes an A record and releases the IP address
 func (iClient *IBloxClient) DeleteARecord(name, ipAddr, netview, cidr string) {
 	obj := ibclient.NewRecordA(
 		ibclient.RecordA{
@@ -163,7 +163,7 @@ func (iClient *IBloxClient) DeleteARecord(name, ipAddr, netview, cidr string) {
 	iClient.ReleaseAddr(netview, cidr, ipAddr)
 }
 
-// Creates a CNAME record
+// CreateCNAMERecord creates a new CNAME record in Infoblox
 func (iClient *IBloxClient) CreateCNAMERecord(name, canonical, netview string) {
 	obj := ibclient.NewRecordCNAME(
 		ibclient.RecordCNAME{
@@ -184,7 +184,7 @@ func (iClient *IBloxClient) CreateCNAMERecord(name, canonical, netview string) {
 	iClient.recordRef[name] = ref
 }
 
-// Deletes a CNAME record
+// DeleteCNAMERecord deletes a CNAME record from Infoblox
 func (iClient *IBloxClient) DeleteCNAMERecord(name, ipAddr, netview, cidr string) {
 	obj := ibclient.NewRecordCNAME(
 		ibclient.RecordCNAME{
@@ -209,7 +209,7 @@ func (iClient *IBloxClient) DeleteCNAMERecord(name, ipAddr, netview, cidr string
 	}
 }
 
-// Changes an available CNAME to an A record, updates all ensuing CNAMEs
+// CNAMEToA changes an available CNAME to an A record, updates all ensuing CNAMEs
 // in the list to point to the new record
 func (iClient *IBloxClient) CNAMEToA(
 	availHosts []string,
@@ -267,7 +267,7 @@ func (iClient *IBloxClient) CNAMEToA(
 	return aRecord, nil
 }
 
-// Reserves and returns the next available address in the network
+// GetNextAddr reserves and returns the next available address in the network
 func (iClient *IBloxClient) GetNextAddr(netview, cidr string) string {
 	nextAddr, err := iClient.objMgr.AllocateIP(netview, cidr, "", "", "")
 	if err != nil {
@@ -276,12 +276,12 @@ func (iClient *IBloxClient) GetNextAddr(netview, cidr string) string {
 	return ipFromRef(nextAddr.IPAddress)
 }
 
-// Releases an IP address back to Infoblox
+// ReleaseAddr releases an IP address back to Infoblox
 func (iClient *IBloxClient) ReleaseAddr(netview, cidr, ipAddr string) {
 	iClient.objMgr.ReleaseIP(netview, cidr, ipAddr, "")
 }
 
-// Returns the current Infoblox records
+// GetRecords returns the current Infoblox records
 func (iClient *IBloxClient) GetRecords() *store.Store {
 	st := store.NewStore()
 	var zones []ibclient.ZoneAuth

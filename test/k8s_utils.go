@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/rest/fake"
 )
 
+// NewNamespace creates a Namespace object
 func NewNamespace(name string, labels map[string]string) *v1.Namespace {
 	return &v1.Namespace{
 		TypeMeta: metav1.TypeMeta{
@@ -43,6 +44,7 @@ func NewNamespace(name string, labels map[string]string) *v1.Namespace {
 	}
 }
 
+// NewConfigMap creates a ConfigMap object
 func NewConfigMap(
 	name,
 	namespace string,
@@ -63,6 +65,7 @@ func NewConfigMap(
 	}
 }
 
+// CopyConfigMap copies a ConfigMap object
 func CopyConfigMap(old v1.ConfigMap) *v1.ConfigMap {
 	a := make(map[string]string)
 	for key, value := range old.Annotations {
@@ -76,6 +79,7 @@ func CopyConfigMap(old v1.ConfigMap) *v1.ConfigMap {
 	)
 }
 
+// NewIngress creates an Ingress object
 func NewIngress(
 	name,
 	namespace string,
@@ -96,6 +100,7 @@ func NewIngress(
 	}
 }
 
+// CopyIngress copies an Ingress object
 func CopyIngress(old v1beta1.Ingress) *v1beta1.Ingress {
 	a := make(map[string]string)
 	for key, value := range old.Annotations {

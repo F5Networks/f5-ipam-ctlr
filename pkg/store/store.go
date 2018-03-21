@@ -18,16 +18,17 @@ package store
 
 import "sort"
 
-// Map of all IP addresses and their corresponding hostnames, netviews, and CIDRs
+// Store is a map of all IP addresses and their corresponding hostnames, netviews, and CIDRs
 type Store struct {
 	Records  map[string]HostSet
 	Netviews map[string]string
 	Cidrs    map[string]string
 }
 
-// Map of hosts (value is record type)
+// HostSet is a map of hosts (value is record type)
 type HostSet map[string]string
 
+// NewStore allocates a new store for the controller
 func NewStore() *Store {
 	var st Store
 	st.Records = make(map[string]HostSet)
@@ -36,7 +37,7 @@ func NewStore() *Store {
 	return &st
 }
 
-// Adds/Updates a record for an IP and hosts
+// AddRecord adds/updates a record for an IP and hosts
 func (st *Store) AddRecord(ip, host, recordType, netview, cidr string) {
 	if _, found := st.Records[ip]; found {
 		if _, ok := st.Records[ip][host]; !ok {
@@ -77,7 +78,7 @@ func (st *Store) deleteHost(delHost string) {
 	}
 }
 
-// Deletes hosts from records
+// DeleteHosts deletes hosts from records
 func (st *Store) DeleteHosts(delHosts []string) {
 	for _, delHost := range delHosts {
 		st.deleteHost(delHost)
@@ -88,17 +89,16 @@ func (st *Store) DeleteHosts(delHosts []string) {
 func (st *Store) getHosts(ip string) []string {
 	var hosts []string
 	if _, found := st.Records[ip]; found {
-		for host, _ := range st.Records[ip] {
+		for host := range st.Records[ip] {
 			hosts = append(hosts, host)
 		}
 		sort.Strings(hosts)
 		return hosts
-	} else {
-		return []string{}
 	}
+	return []string{}
 }
 
-// Returns the IP address for a given host
+// GetIP returns the IP address for a given host
 func (st *Store) GetIP(host string) string {
 	for ip, hosts := range st.Records {
 		if _, ok := hosts[host]; ok {

@@ -21,7 +21,7 @@ import (
 	"sort"
 )
 
-// Defines the interface the orchestration should implement
+// Client defines the interface the orchestration should implement
 type Client interface {
 	// Runs the client, watching for resources
 	Run(stopCh <-chan struct{})
@@ -146,7 +146,7 @@ func (ipGrp *IPGroup) getSpecsWithHosts(hosts []string) []Spec {
 	return specs
 }
 
-// Returns all hosts across IPGroups
+// GetAllHosts returns all hosts across IPGroups
 func (ipGrp *IPGroup) GetAllHosts() []string {
 	var hosts []string
 	for _, grp := range ipGrp.Groups {
@@ -170,7 +170,7 @@ func (ipGrp *IPGroup) getSpec(key resourceKey) (bool, Spec, string) {
 	return false, Spec{}, ""
 }
 
-// Returns the number of total hosts stored
+// NumHosts returns the number of total hosts stored
 func (ipGrp *IPGroup) NumHosts() int {
 	sum := 0
 	for _, grp := range ipGrp.Groups {

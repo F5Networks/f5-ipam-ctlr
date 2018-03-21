@@ -162,11 +162,11 @@ func verifyArgs() error {
 	}
 
 	if len(*orch) == 0 {
-		return fmt.Errorf("Orchestration is required.")
+		return fmt.Errorf("orchestration is required")
 	}
 
 	if len(*mgr) == 0 {
-		return fmt.Errorf("IP-Manager is required.")
+		return fmt.Errorf("ip-manager is required")
 	}
 
 	if *verifyInterval < 0 {
@@ -177,17 +177,17 @@ func verifyArgs() error {
 	*mgr = strings.ToLower(*mgr)
 
 	if len(*namespaces) != 0 && len(*namespaceLabel) != 0 {
-		return fmt.Errorf("Cannot specify both namespace and namespace-label.")
+		return fmt.Errorf("cannot specify both namespace and namespace-label")
 	}
 
 	if *mgr == INFOBLOX {
 		if len(*ibHost) == 0 || len(*ibVersion) == 0 {
-			return fmt.Errorf("Missing required Infoblox parameter.")
+			return fmt.Errorf("missing required Infoblox parameter")
 		} else if (len(*ibUsername) == 0 || len(*ibPassword) == 0) && len(*credsDir) == 0 {
-			return fmt.Errorf("Missing Infoblox credentials.")
+			return fmt.Errorf("missing Infoblox credentials")
 		} else if len(*ibUsername) > 0 && len(*ibPassword) > 0 && len(*credsDir) > 0 {
 			return fmt.Errorf(
-				"Please specify either credentials directory OR username/password, not both.")
+				"please specify either credentials directory OR username/password, not both")
 		}
 	}
 

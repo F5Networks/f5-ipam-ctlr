@@ -37,7 +37,7 @@ if [[ $BUILD_INFO == "" ]]; then
 fi
 
 
-# Defer calculating build dir until actualy in the build environment
+# Defer calculating build dir until actually in the build environment
 get_builddir() {
 # Ensure PWD starts with GOPATH
   if [ "${PWD##$GOPATH}" == "${PWD}" ]; then
@@ -68,7 +68,7 @@ echodo() {
 
 #TODO: Should GOBIN be set too?
 go_install () {
-  # Declare seperate from assign, so failures aren't maked by local
+  # Declare separate from assign, so failures aren't marked by local
   local BUILDDIR
   BUILDDIR=$(get_builddir)
   local GO_BUILD_FLAGS=( -v -ldflags "-extldflags \"-static\" -X main.version=${BUILD_VERSION} -X main.buildInfo=${BUILD_INFO}" )
@@ -108,12 +108,12 @@ gather_coverage() {
 	
   (
     cd $WKDIR/src/github.com/F5Networks
-    gocovmerge `find . -name *.coverprofile` > merged-coverage.out
-    go tool cover -html=merged-coverage.out -o coverage.html
-    go tool cover -func=merged-coverage.out
+    gocovmerge `find . -name *.coverprofile` > coverage.out
+    go tool cover -html=coverage.out -o coverage.html
+    go tool cover -func=coverage.out
     # Total coverage for CI
-    go tool cover -func=merged-coverage.out | grep "^total:" | awk 'END { print "Total coverage:", $3, "of statements" }'
-    rsync -a -f"+ */" -f"+ *.coverprofile" -f"+ coverage.html" -f"+ merged-coverage.out" -f"- *" . $BUILDDIR/coverage
+    go tool cover -func=coverage.out | grep "^total:" | awk 'END { print "Total coverage:", $3, "of statements" }'
+    rsync -a -f"+ */" -f"+ *.coverprofile" -f"+ coverage.html" -f"+ coverage.out" -f"- *" . $BUILDDIR/coverage
   )
 }
 

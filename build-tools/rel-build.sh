@@ -20,8 +20,8 @@ export GOPATH=/build
 
 # push coverage data to coveralls if F5 repo or if configured for fork.
 if [ "$COVERALLS_TOKEN" ]; then
-  cat $BUILDDIR/coverage/merged-coverage.out >> $BUILDDIR/merged-coverage.out
+  cat $BUILDDIR/coverage/coverage.out >> $BUILDDIR/coverage.out
   goveralls \
-    -coverprofile=$BUILDDIR/merged-coverage.out \
+    -coverprofile=$BUILDDIR/coverage.out \
     -service=travis-ci
 fi
