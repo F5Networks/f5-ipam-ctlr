@@ -1,0 +1,42 @@
+FROM registry.access.redhat.com/rhel-atomic
+
+LABEL name="f5networks/f5-ipam-ctlr" \
+      vendor="F5 Networks" \
+      # version - should be passed in via docker build
+      url="https://github.com/F5Networks/f5-ipam-ctlr" \
+      summary="F5 IPAM Controller" \
+      description="Allocates IP addresses via IPAM and Orchestration" \
+      run='docker run --name ${NAME} ${IMAGE} /app/bin/f5-ipam-ctlr' \
+      io.k8s.description="Allocates IP addresses via IPAM and Orchestration" \
+      io.k8s.display-name="F5 IPAM Controller" \
+      io.openshift.expose-services="" \
+      io.openshift.tags="f5,f5networks,openshift,ipam"
+
+ENV APPPATH /app
+
+RUN mkdir -p "$APPPATH/bin" \
+ && chmod -R 755 "$APPPATH"
+
+WORKDIR $APPPATH
+
+COPY help.md /tmp/
+COPY LICENSE /licenses/
+
+RUN microdnf --enablerepo=rhel-7-server-rpms --enablerepo=rhel-7-server-optional-rpms \
+      --enablerepo=rhel-server-rhscl-7-rpms install --nodocs \
+      golang-github-cpuguy83-go-md2man && \
+    microdnf update && \
+    go-md2man -in /tmp/help.md -out /help.1 && rm -f /tmp/help.md && \
+    microdnf remove golang-github-cpuguy83-go-md2man git fipscheck fipscheck-lib groff-base \
+      less libedit libgnome-keyring openssh openssh-clients perl perl-Carp perl-Encode \
+      perl-Error perl-Exporter perl-File-Path perl-File-Temp perl-Filter perl-Getopt-Long \
+      perl-Git perl-HTTP-Tiny perl-PathTools perl-Pod-Escapes perl-Pod-Perldoc perl-Pod-Simple \
+      perl-Pod-Usage perl-Scalar-List-Utils perl-Socket perl-Storable perl-TermReadKey \
+      perl-Text-ParseWords perl-Time-HiRes perl-Time-Local perl-constant perl-libs perl-macros \
+      perl-parent perl-podlators perl-threads perl-threads-shared rsync && \
+    microdnf clean all
+
+COPY f5-ipam-ctlr $APPPATH/bin
+
+# Run the application in the project's bin directory.
+CMD [ "/app/bin/f5-ipam-ctlr" ]

@@ -21,8 +21,7 @@ VERSION_INFO=$(${CURDIR}/version-tool version)
 # Hard code the platform dir here
 cp $CURDIR/../_docker_workspace/out/$RELEASE_PLATFORM/bin/* $WKDIR/
 cp LICENSE $WKDIR/
-# Uncomment once we have documentation
-# cp $CURDIR/help.md $WKDIR/help.md
+cp $CURDIR/help.md $WKDIR/help.md
 
 echo "Docker build context:"
 ls -la $WKDIR
