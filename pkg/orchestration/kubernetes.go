@@ -44,7 +44,7 @@ const ipamWatchAnnotation = "ipam.f5.com/ip-allocation"
 const groupAnnotation = "ipam.f5.com/group"
 const netviewAnnotation = "ipam.f5.com/infoblox-netview"
 const cidrAnnotation = "ipam.f5.com/network-cidr"
-const hostnameAnnotation = "virtual-server.f5.com/hostname"
+const hostnameAnnotation = "ipam.f5.com/hostname"
 const ipAnnotation = "virtual-server.f5.com/ip"
 
 // IPAM system being used

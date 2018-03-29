@@ -88,30 +88,36 @@ devel-image:
 #
 # Docs
 #
-#doc-preview:
-#	rm -rf docs/_build
-#	DOCKER_RUN_ARGS="-p 127.0.0.1:8000:8000" \
-#	  ./build-tools/docker-docs.sh make -C docs preview
-#
-#docs: docs/_static/ATTRIBUTIONS.md always-build
-#	./build-tools/docker-docs.sh ./build-tools/make-docs.sh
-#
-#docker-test:
-#	rm -rf docs/_build
-#	./build-tools/docker-docs.sh ./build-tools/make-docs.sh
+doc-preview:
+	rm -rf docs/_build
+	DOCKER_RUN_ARGS="-p 127.0.0.1:8000:8000" \
+	  ./build-tools/docker-docs.sh make -C docs preview
+
+docs: docs/_static/ATTRIBUTIONS.md always-build
+	./build-tools/docker-docs.sh ./build-tools/make-docs.sh
+
+docker-test:
+	rm -rf docs/_build
+	./build-tools/docker-docs.sh ./build-tools/make-docs.sh
+
+# one-time html build using a docker container
+.PHONY: docker-html
+docker-html:
+	rm -rf docs/_build
+	./build-tools/docker-docs.sh make -C docs/ html
 
 #
 # Attributions Generation
 #
-#golang_attributions.json: Godeps/Godeps.json
-#	./build-tools/attributions-generator.sh \
-#		/usr/local/bin/golang-backend.py --project-path=$(CURDIR)
-#
-#flatfile_attributions.json: .f5license
-#	./build-tools/attributions-generator.sh \
-#		/usr/local/bin/flatfile-backend.py --project-path=$(CURDIR)
-#
-#docs/_static/ATTRIBUTIONS.md: flatfile_attributions.json  golang_attributions.json
-#	./build-tools/attributions-generator.sh \
-#		node /frontEnd/frontEnd.js $(CURDIR)
-#	mv ATTRIBUTIONS.md $@
+golang_attributions.json: Godeps/Godeps.json
+	./build-tools/attributions-generator.sh \
+		/usr/local/bin/golang-backend.py --project-path=$(CURDIR)
+
+flatfile_attributions.json: .f5license
+	./build-tools/attributions-generator.sh \
+		/usr/local/bin/flatfile-backend.py --project-path=$(CURDIR)
+
+docs/_static/ATTRIBUTIONS.md: flatfile_attributions.json  golang_attributions.json
+	./build-tools/attributions-generator.sh \
+		node /frontEnd/frontEnd.js $(CURDIR)
+	mv ATTRIBUTIONS.md $@

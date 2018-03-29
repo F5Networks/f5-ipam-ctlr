@@ -1,0 +1,33 @@
+# Sample Kubernetes Ingress Resource
+# You can add the 'ipam.f5.com' annotations to an existing or new resource
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: multi-service
+  annotations:
+     'ipam.f5.com/ip-allocation': 'dynamic'
+     'ipam.f5.com/network-cidr': '1.2.3.0/24'
+     'ipam.f5.com/infoblox-netview': 'default'
+     # All multi-service Ingress resources in the specified group will share
+     # the assigned IP address
+     'ipam.f5.com/group': 'A'
+spec:
+  rules:
+    - host: siteA.example.com
+      http:
+        paths:
+          - path: /path1
+            backend:
+              serviceName: my-service1
+              servicePort: 80
+          - path: /path2
+            backend:
+              serviceName: my-service2
+              servicePort: 80
+    - host: siteB.example.com
+      http:
+        paths:
+          - path: /path3
+            backend:
+              serviceName: my-service3
+              servicePort: 80
