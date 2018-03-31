@@ -119,5 +119,5 @@ flatfile_attributions.json: .f5license
 
 docs/_static/ATTRIBUTIONS.md: flatfile_attributions.json  golang_attributions.json
 	./build-tools/attributions-generator.sh \
-		node /frontEnd/frontEnd.js $(CURDIR)
+		node /frontEnd/frontEnd.js --pd $(CURDIR)
 	mv ATTRIBUTIONS.md $@
