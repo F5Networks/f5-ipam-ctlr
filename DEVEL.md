@@ -48,7 +48,7 @@ For details, see https://github.com/tools/godep
 
 If you just want to build, or make changes that don't affect dependencies, there is nothing special to do.
 
-If your change to modify dependencies, you will need to deal with godep. CThe In general, you will want to:
+If your change to modify dependencies, you will need to deal with godep. In general, you will want to:
 
 1. `make godep-restore` - This will install all your dependencies into $GOPATH, and remove the vendor directory.
    go build will find the versions of the dependencies in $GOPATH, allowing you to easily modify them
