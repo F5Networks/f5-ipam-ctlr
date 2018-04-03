@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/F5Networks/f5-ipam-ctlr.svg?branch=master)](https://travis-ci.org/F5Networks/f5-ipam-ctlr) [![Coverage Status](https://coveralls.io/repos/github/F5Networks/f5-ipam-ctlr/badge.svg?branch=master)](https://coveralls.io/github/F5Networks/f5-ipam-ctlr?branch=master)
+[![Build Status](https://travis-ci.org/F5Networks/f5-ipam-ctlr.svg?branch=master)](https://travis-ci.org/F5Networks/f5-ipam-ctlr) [![Coverage Status](https://coveralls.io/repos/github/F5Networks/f5-ipam-ctlr/badge.svg?branch=HEAD)](https://coveralls.io/github/F5Networks/f5-ipam-ctlr?branch=HEAD)
 
 F5 IPAM Controller
 ==================
@@ -22,7 +22,7 @@ Official documentation coming soon...
 Getting Help
 ------------
 
-Contact F5 Technical support via your typical method for more time sensitive changes and other issues requiring immediate support.
+Contact F5 Technical support via your typical method for time sensitive changes and other issues requiring immediate support.
 
 Running
 -------
