@@ -27,7 +27,13 @@ Contact F5 Technical support via your typical method for more time sensitive cha
 Running
 -------
 
-Official docker images coming soon...
+The official docker image is `f5networks/f5-ipam-ctlr`.
+
+Usually, the controller is deployed in an orchestration environment. However, the controller can be run locally for development testing.
+
+```shell
+docker run f5networks/f5-ipam-ctlr /app/bin/f5-ipam-ctlr <args>
+```
 
 Building
 --------
