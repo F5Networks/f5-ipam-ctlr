@@ -36,6 +36,7 @@ script:
       export CTLR_VERSION="${va[0]}.${va[1]}"
     else
       export CTLR_VERSION=$TRAVIS_BRANCH
+    fi
   - export CLEAN_BUILD=true
   - export BASE_OS=alpine
   - make verify
