@@ -49,24 +49,57 @@
 
 # The apimachinery module contains a proper LICENSE file.
 - name: apimachinery
-  version: kubernetes-1.9.3-beta.0-2-g19e3f5a
+  version: kubernetes-1.10.0-beta.0-61-g5d4f0da
   license: Apache-2.0
   author:
     name: Kubernetes authors
 
 # The api module contains a proper LICENSE file.
 - name: api
-  version: kubernetes-1.10.0-alpha.2
+  version: kubernetes-1.10.0-beta.0-79-g847e24b2
   license: Apache-2.0
   author:
     name: Kubernetes authors
 
 # The client-go module contains a proper LICENSE file.
 - name: client-go
-  version: kubernetes-1.9.3-beta.0
+  version: kubernetes-1.10.0-alpha.3-89-g989be427
   license: Apache-2.0
   author:
     name: Kubernetes authors
+
+# The time module contains a proper LICENSE file.
+- name: time
+  version: 26559e0
+  license: BSD 3-clause
+  attribution_text: |
+    Copyright (c) 2009 The Go Authors. All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
+
+       * Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+       * Redistributions in binary form must reproduce the above
+    copyright notice, this list of conditions and the following disclaimer
+    in the documentation and/or other materials provided with the
+    distribution.
+       * Neither the name of Google Inc. nor the names of its
+    contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # The crypto module contains a proper LICENSE file.
 - name: crypto
@@ -471,42 +504,6 @@
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
-
-# The juju/ratelimit module contains a proper LICENSE file.
-- name: juju/ratelimit
-  version: "1.0"
-  attribution_text: |
-    All files in this repository are licensed as follows. If you contribute
-    to this repository, it is assumed that you license your contribution
-    under the same license unless you state otherwise.
-
-    All files Copyright (C) 2015 Canonical Ltd. unless otherwise specified in the file.
-
-    This software is licensed under the LGPLv3, included below.
-
-    As a special exception to the GNU Lesser General Public License version 3
-    ("LGPL3"), the copyright holders of this Library give you permission to
-    convey to a third party a Combined Work that links statically or dynamically
-    to this Library without providing any Minimal Corresponding Source or
-    Minimal Application Code as set out in 4d or providing the installation
-    information set out in section 4e, provided that you comply with the other
-    provisions of LGPL3 and provided that you meet, for the Application the
-    terms and conditions of the license(s) which apply to the Application.
-
-    Except as stated in this special exception, the provisions of LGPL3 will
-    continue to comply in full to this Library. If you modify this Library, you
-    may apply this exception to your version of this Library, but you are not
-    obliged to do so. If you do not wish to do so, delete this exception
-    statement from your version. This exception does not (and cannot) modify any
-    license terms which apply to the Application, with which you must still
-    comply.
-
-# The kube-openapi module contains a proper LICENSE file.
-- name: kube-openapi
-  version: a07b7bb
-  license: Apache-2.0
-  author:
-    name: Kubernetes authors
 
 # The mailru/easyjson module contains a proper LICENSE file.
 - name: mailru/easyjson
