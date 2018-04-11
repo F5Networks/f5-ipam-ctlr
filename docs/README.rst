@@ -1,6 +1,13 @@
 F5 IPAM Controller
 ==================
 
+.. raw:: html
+
+   <div class="alert alert-danger alert-dismissible">
+      <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+      <strong><i class="fa fa-flask"></i> WARNING!</strong> This is a beta release. Functionality and testing may be incomplete or under development.
+   </div>
+
 .. toctree::
    :hidden:
    :maxdepth: 2
@@ -34,11 +41,11 @@ The Controller can:
 Features
 --------
 
-- Interfaces with an orchestration environment to receive lists of host names.
-- Interfaces with an IPAM system to allocate IP addresses for the requested host names.
-- Creates A records and CNAME records for the host names and chosen IP addresses.
+- Interfaces with an orchestration environment to receive lists of host names. :fonticon:`fa fa-flask`
+- Interfaces with an IPAM system to allocate IP addresses for the requested host names. :fonticon:`fa fa-flask`
+- Creates A records and CNAME records for the host names and chosen IP addresses. :fonticon:`fa fa-flask`
 - Annotates the orchestration resources with the chosen IP addresses to enable integration
-  with an `F5 Container Connector`_.
+  with an `F5 Container Connector`_. :fonticon:`fa fa-flask`
 
 Supported Environments
 ----------------------
