@@ -15,21 +15,21 @@
  },
  {
    "name": "apimachinery",
-   "version": "kubernetes-1.9.3-beta.0-2-g19e3f5a",
+   "version": "kubernetes-1.10.0-beta.0-61-g5d4f0da",
    "license": "Apache 2.0",
    "category": 3,
    "status": "pending"
  },
  {
    "name": "api",
-   "version": "kubernetes-1.10.0-alpha.2",
+   "version": "kubernetes-1.10.0-beta.0-79-g847e24b2",
    "license": "Apache 2.0",
    "category": 3,
    "status": "pending"
  },
  {
    "name": "client-go",
-   "version": "kubernetes-1.9.3-beta.0",
+   "version": "kubernetes-1.10.0-alpha.3-89-g989be427",
    "license": "Apache 2.0",
    "category": 3,
    "status": "pending"
@@ -182,20 +182,6 @@
    "status": "pending"
  },
  {
-   "name": "juju/ratelimit",
-   "version": "1.0",
-   "license": "LGPLv3",
-   "category": 3,
-   "status": "pending"
- },
- {
-   "name": "kube-openapi",
-   "version": "a07b7bb",
-   "license": "Apache 2.0",
-   "category": 3,
-   "status": "pending"
- },
- {
    "name": "mailru/easyjson",
    "version": "d5b7844",
    "license": "MIT",
@@ -262,6 +248,13 @@
    "name": "yaml",
    "version": "v2",
    "license": "Apache 2.0",
+   "category": 3,
+   "status": "pending"
+ },
+ {
+   "name": "time",
+   "version": "26559e0",
+   "license": "BSD 3-clause",
    "category": 3,
    "status": "pending"
  }
