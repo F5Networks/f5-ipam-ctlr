@@ -1,12 +1,6 @@
 Release Notes for F5 IPAM Controller
 ====================================
 
-next-release
-------------
-
-Bug Fixes
-`````````
-
 v0.1.0
 ------
 
