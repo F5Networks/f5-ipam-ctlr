@@ -17,7 +17,8 @@ The controller currently supports the following environments:
 Documentation
 -------------
 
-Official documentation coming soon...
+For instruction on how to use this component, see the
+[docs](http://clouddocs.f5.com/products/ipam-ctlr/latest/) for F5 IPAM Controller.
 
 Getting Help
 ------------
