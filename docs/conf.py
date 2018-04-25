@@ -85,17 +85,17 @@ rst_epilog = '''
 .. |url-version| replace:: %(url_version)s
 .. |release-notes| raw:: html
 
-    <a href="%(base_url)s/products/connectors/f5-ipam-ctlr/%(url_version)s/RELEASE-NOTES.html">Release Notes</a>
+    <a href="%(base_url)s/products/ipam-ctlr/%(url_version)s/RELEASE-NOTES.html">Release Notes</a>
 .. |attributions| raw:: html
 
-    <a href="%(base_url)s/products/connectors/f5-ipam-ctlr/%(url_version)s/_static/ATTRIBUTIONS.html">Attributions</a>
+    <a href="%(base_url)s/products/ipam-ctlr/%(url_version)s/_static/ATTRIBUTIONS.html">Attributions</a>
 .. |ctlr| replace:: :code:`f5-ipam-ctlr`
 .. |ctlr-long| replace:: F5 IPAM Controller
 .. _annotations: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 .. _ConfigMap: https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/
 .. _F5 Container Connector: %(base_url)s/containers/latest/
 .. _F5 BIG-IP Controller for Kubernetes: http://clouddocs.f5.com/products/connectors/k8s-bigip-ctlr/latest/
-.. _F5 Resource: %(base_url)s/containers/latest/kubernetes/#f5-resource-properties
+.. _F5 Resource: %(base_url)s/containers/v2/kubernetes/kctlr-f5-resource.html#f5-resource-properties
 .. _Infoblox: https://www.infoblox.com/
 .. _Ingress: https://kubernetes.io/docs/concepts/services-networking/ingress/
 .. _Kubernetes: https://kubernetes.io/
@@ -171,7 +171,7 @@ html_sidebars = {
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
 #
-html_title = project
+html_title = "F5 IPAM Controller"
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #
