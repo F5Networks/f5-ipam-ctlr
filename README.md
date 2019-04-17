@@ -2,6 +2,7 @@
 
 F5 IPAM Controller
 ==================
+**This GitHub repository has been archived and is read-only. This project is no longer actively maintained.**
 
 The F5 IPAM Controller interfaces with an IPAM system to allocate IP addresses for host names in an orchestration environment.
 
@@ -20,10 +21,7 @@ Documentation
 For instruction on how to use this component, see the
 [docs](http://clouddocs.f5.com/products/ipam-ctlr/latest/) for F5 IPAM Controller.
 
-Getting Help
-------------
 
-Contact F5 Technical support via your typical method for time sensitive changes and other issues requiring immediate support.
 
 Running
 -------
